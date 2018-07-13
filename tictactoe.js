@@ -1,5 +1,96 @@
-console.log(process.argv[2]);
+const inquirer = require("inquirer");
 
+// process.stdout.write("\033c");//clear terminal
+
+const Game = (() => {
+	const grid = ["","","","","","","","",""];
+
+	
+	return {
+		grid,
+		get openSquares () {
+			let opens = [];
+			console.log('this.grid', grid);
+			grid.map((square, index) => {
+				!square.length ? opens.push(`${index + 1}`):null;
+				console.log(opens);
+			});
+			return opens;
+		},
+
+		getPlayerMove (player) {
+			console.log(`\n\n\nopenSquares = ${this.openSquares}`);
+			const inquiry = [{
+				type: "list",
+				message: `Choose a square to place your ${player.name}`,
+				name: "choice",
+				choices: this.openSquares
+			}];
+			inquirer.prompt(inquiry)
+				.then(answer => {
+					console.log(`You chose ${answer.choice}`);
+					this.grid[parseInt(answer.choice) - 1] = player.name;
+					console.log('grid', this.grid);
+				});
+		}
+	}
+	
+	// let openSquares = [];
+	// grid.map((square, index) => {
+	// 	if (!square.length){
+	// 		openSquares.push(index + 1);
+	// 	}
+	// });
+	// get openSquares () {
+	// 	let opens = [];
+	// 	this.grid.map((square, index) => {
+	// 		!square.length ? opens.push(index + 1):null;
+	// 		return opens;
+	// 	});
+	// }
+
+
+	// toExport.getPlayerMove = (player) => {
+	// 	console.log("\n\n\n");
+	// 	const inquiry = [{
+	// 		type: "list",
+	// 		message: `Choose a square to place your ${player.name}`,
+	// 		name: "choice",
+	// 		choices: openSquares
+	// 	}];
+	// 	inquirer.prompt(inquiry)
+	// 		.then(answer => {
+	// 			console.log(`You chose ${answer.choice}`);
+	// 			this.grid[parseInt(answer.choice) - 1] = player.name;
+	// 			console.log('grid', this.grid);
+	// 		});
+	// }
+
+	// // const gameIsOver = (grid, openSquares) => {
+	// // 	if (!openSquares.length){
+	// // 		return true;
+	// // 	}
+
+	// // }
+	// console.log("grid=",toExport.grid);
+
+	// return toExport;//
+	// 	{
+	// 	// openSquares,
+	// 	get openSquares () {
+	// 		let opens = [];
+	// 		this.grid.map((square, index) => {
+	// 			!square.length ? opens.push(index + 1):null;
+	// 			console.log(opens);
+	// 			return opens;
+	// 		});
+	// 	},
+	// 	grid: this.grid,
+	// 	getPlayerMove: getPlayerMove
+	// }
+})();
+
+console.log('Game', Game.openSquares);
 const Player = {
 	moves: [],
 	init: (name) => {
@@ -12,46 +103,35 @@ const Player = {
 	}
 }
 
-const playerX = Object.create(Player);
+const playerX = Object.create(Player).init("X");
 const playerO = Object.create(Player);
 
 console.log("PlayerX = ", playerX);
 
-const grid = [
-	[["1"],["2"],["3"]],
-	[["4"],["5"],["6"]],
-	[["7"],["8"],["9"]]
-	];
 
-let winningPatterns = [
-	["1", "2", "3"],
-	["1", "5", "9"],
-	["1", "4", "7"],
-	["2", "5", "8"],
-	["3", "5", "7"],
-	["3", "6", "9"],
-	["4", "5", "6"],
-	["7", "8", "9"]
-	];
-
-const playTurn = (grid, player, square) => {
-	console.log(`playTurn(${grid}, ${player}, ${square}) called.`)
-	player.turn = square;
-	console.log(player.moves);
-}
-
-const repeat = (func, n) => {
-	return Array(n).map(() => func());
-}
-
-const d = grid[1][0];
-console.log(`d = ${d}`);
-
-
-// (playTurn(grid, playerX, "11").repeat(3));
-let thingy =  Array(30, 0).map(() => {
-	playTurn(grid, playerX, "11");
-	return "O";
-});
-console.log(thingy);
 console.log(`playerX moves: ${playerX.moves}`);
+
+Game.getPlayerMove(playerX);
+
+
+console.log('Game.openSquares', Game.openSquares);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
