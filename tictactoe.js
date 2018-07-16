@@ -1,34 +1,56 @@
-const inquirer = require("inquirer");
+// const inquirer = require("inquirer");
+// const fs = require("fs");
 
 // process.stdout.write("\033c");//clear terminal
 
-const Game = (() => {
-	const grid = ["","","","","","","","",""];
-	let nextPlayer = "X", playerOne;
-	const winningPatterns = [
-	[0,1,2], [0,4,8], [0,3,6], [1,4,7], [2,4,6], [2,5,8], [3,4,5], [6,7,8]
-	];
+const TicTacToe = (() => {
+	const inquirer = require("inquirer");
+	const fs = require("fs");
+	const Game = {
+		grid: ["","","","","","","","",""],
+		nextPlayer: "X",
+		humanPlayer: undefined,
+		winningPatterns: [
+			[0,1,2], [0,4,8], [0,3,6], [1,4,7], [2,4,6], [2,5,8], [3,4,5], [6,7,8]
+		],
+		history: {
+			playerOne: null,
+			moves: [],
+			result: null	
+		}
+	}
 
 	const clearTerminal = () => {
 		return process.stdout.write("\033c");//clear terminal
 	}
 
-	const displayGrid = () => {
-		const _ = grid;
+	const displayGrid = (game) => {
+		const _ = game.grid;
 		const underlined = "\x1b[4m";
 		const white = "\x1b[37m"
 		const resetStyle = "\x1b[0m";
 		let firstRow =  `${_[0]||1}|${_[1]||2}|${_[2]||3}`;
 		let secondRow = `${_[3]||4}|${_[4]||5}|${_[5]||6}`;
 		let thirdRow =  `${_[6]||7}|${_[7]||8}|${_[8]||9}`;
+		console.log("\n");
 		console.log(underlined + white, firstRow, resetStyle);
 		console.log(underlined + white, secondRow, resetStyle);
 		console.log(white, thirdRow, resetStyle);
+		return console.log("\n");
 	}
 
-	const start = () => {
+	const deepCopy = (obj) => {
+		return 	JSON.parse(JSON.stringify(obj))
+	}
+
+	const newGame = () => {
+		return Object.create(deepCopy(Game));
+	}
+
+	const startGame = () => {
+		const game = newGame();
+		console.log('game.history', game.history);
 		clearTerminal();
-		displayGrid();
 		const inquiry = [{
 			type: "list",
 			message: "Play as 'X' or 'O'?\n('X' will play first)",
@@ -37,54 +59,102 @@ const Game = (() => {
 		}];
 		inquirer.prompt(inquiry)
 			.then(answer => {
-				playerOne = answer.choice;
-				let welcome = `Welcome, Player ${playerOne}!\n`;
-				if (playerOne === "O") {
-					welcome += "Your opponent will play first.";
+				game.humanPlayer = answer.choice;
+				game.history.humanPlayer = answer.choice;
+				let welcome = `Welcome, Player ${game.humanPlayer}!\n`;
+				if (game.humanPlayer === "O") {
+					welcome += "The computer will play first.";
 				} else {
 					welcome += "You will play first.";
 				}
 				clearTerminal();
-				displayGrid();
+				displayGrid(game);
 				console.log(welcome);
-				setTimeout(() =>{turnLoop("X")}, 1000);
+				setTimeout(() =>{turnLoop(game)}, 1000);
 			});
 	}
 
-	const getMove = async function (player) {
-		let func = player === playerOne ? getPlayerMove : getComputerMove;
-		// return new Promise((resolve, reject) => {
-		// 	resolve(func());
-		// })
-		return await func();
-		
+	const runRandomSimulations = async function (reps, playerOne = "X") {
+		const simulations = [];
+		for (let i = 0; i < reps; i++){
+			const game = newGame();
+			game.humanPlayer = game.history.playerOne = playerOne;
+			const gameResult = await simulationTurnLoop(game);
+			simulations.push(gameResult);
+		}
+		// console.log(JSON.stringify(simulations));
+
+		fs.writeFile("tictactoe-simulations.json", JSON.stringify(simulations), "utf8", (err) => console.error(err));
+		return simulations;
 	}
 
-	const getPlayerMove = () => {
+	const simulationTurnLoop = async function (game) {
+		let winner = determineWinner(game);
+		if (winner){
+			game.history.result = winner;
+			return game.history;
+		}
+		const move =  await getStupidComputerMove(game);
+		recordMove(game);
+		game.grid[move - 1] = game.nextPlayer;
+		game.nextPlayer = game.nextPlayer === "X" ? "O" : "X";
+		return simulationTurnLoop(game);
+	}
+
+
+	const turnLoop = async function (game) {
+		let winner = determineWinner(game);
+		if (winner){
+			game.history.result = winner;
+			clearTerminal();
+			displayGrid(game);
+			console.log("\n\nGame over!");
+			let message = winner === game.humanPlayer ? `\nCongratulations, Player ${winner}, you win! 🏆` : winner === "draw" ? "\nThe game was a draw. 😐" : "You were defeated by the computer. 😖"
+			console.log(message);
+			return playAgain(game);
+		}
+		clearTerminal();
+		displayGrid(game);
+		const move =  await getMove(game);
+		recordMove(game);
+		clearTerminal();
+		displayGrid(game);
+		game.grid[move - 1] = game.nextPlayer;
+		game.nextPlayer = game.nextPlayer === "X" ? "O" : "X";
+		setTimeout(() => {
+			return turnLoop(game);
+		}, 999)
+	}
+
+	const getMove = (game) => {
+		let func = game.nextPlayer === game.humanPlayer ? getPlayerMove : getStupidComputerMove;
+		return func(game);
+	}
+
+	const getPlayerMove = async function (game) {
 		const inquiry = [{
 			type: "list",
-			message: `Choose a square to place your ${playerOne}`,
-			name: "choice",
-			choices: getOpenSquares()
+			message: `Choose a square to place your ${game.humanPlayer}`,
+			name: "move",
+			choices: getOpenSquares(game.grid)
 		}];
-		inquirer.prompt(inquiry)
+		const move = await inquirer.prompt(inquiry)
 			.then(answer => {
-				console.log(`You chose ${answer.choice}`);
-				return grid[parseInt(answer.choice) - 1] = playerOne;
+				console.log(`You chose ${answer.move}`);
+				return answer.move;
 			});	
-
+		return move;
 	}
 
-	const getComputerMove = () => {
-		const options = getOpenSquares();
-		const guess = Math.floor(Math.random() * options.length);
-		console.log('raw guess', guess)
-		console.log("computer's guess", options[guess] - 1);
-		grid[parseInt(guess)] = nextPlayer;
-		return displayGrid();
+	//currently returns a random move
+	const getStupidComputerMove = (game) => {
+		const openSquares = getOpenSquares(game.grid);
+		const guessIndex = Math.floor(Math.random() * openSquares.length);
+		// console.log(`The computer chooses square ${openSquares[guessIndex]}`);
+		return openSquares[guessIndex];
 	}
 
-	const getOpenSquares = () => {
+	const getOpenSquares = (grid) => {
 		let opens = [];
 		grid.map((square, index) => {
 			!square.length ? opens.push(`${index + 1}`):null;
@@ -92,16 +162,16 @@ const Game = (() => {
 		return opens;
 	}
 
-	const determineWinner = () => {
+	const determineWinner = (game) => {
 		let patternResult, winner;
-		winningPatterns.map((pattern) => {
+		game.winningPatterns.map((pattern) => {
 			patternResult = pattern.reduce((accumulator, currentValue) => {
-				let player = grid[currentValue];
-				if (accumulator === false){
-					return false;
-				}
+				let player = game.grid[currentValue];
 				if (accumulator === 0){
 					return player;
+				}
+				if (accumulator === false){
+					return false;
 				}
 				return player !== accumulator ? false : player;
 			}, 0);// 0 sets initialValue of reduce so it won't skip first index
@@ -109,52 +179,36 @@ const Game = (() => {
 				winner = patternResult;
 			}
 		});
-		return winner || !getOpenSquares().length ? "draw" : null;//winner name or "draw" or null if game is incomplete
+		return winner ? winner : !getOpenSquares(game.grid).length ? "draw" : null;//return winner, if any, null if game is not over, draw if all squares are filled and there is still no winner
 	}
 
-	function turnLoop (player) {
-		let winner = determineWinner();
-		if (winner){
-			console.log("\n\n\nGame over!");
-			let message = winner === "draw" ? "\nThe game was a draw.\nThanks for playing." : `Player ${winner} wins!\nCongratulations!`;
-			return console.log(message);
-		}
-		// clearTerminal();
-		displayGrid();
-		getMove(player).then(() => {
-				console.log("returned from async call.");
-				console.log('nextPlayer', nextPlayer);
-				nextPlayer = nextPlayer === "X" ? "O" : "X";
-				console.log('nextPlayer', nextPlayer);
-				return turnLoop(nextPlayer);
+	const playAgain = (game) => {
+		console.log("\nhistory:", game.history)
+		const inquiry = [{
+			type: "confirm",
+			message: "Would you like to play again?",
+			name: "choice"
+		}];
+		inquirer.prompt(inquiry).then((answer) => {
+			return answer.choice ? startGame() : process.exit();
 		});
 	}
-	// console.log("determineWinner test", determineWinner(["O","O","X","X","O","O","O","X","X"], winningPatterns))
+
+	const recordMove = (game) => {
+		return game.history.moves.push(deepCopy(game.grid));
+	}
+
 	return {
-		grid,
-		getPlayerMove,
-		getOpenSquares,
-		determineWinner,
-		displayGrid,
-		start
+		Game,
+		startGame,
+		newGame,
+		runRandomSimulations
 	}
 })();
 
-Game.displayGrid();
-Game.start();
+module.exports = TicTacToe
+// TicTacToe.runRandomSimulations(10000);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// const sims = require("./tictactoe-simulations.json");
+// console.log("sims[0] = ", sims[1000]);
 
