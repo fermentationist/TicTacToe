@@ -1,8 +1,3 @@
-// const inquirer = require("inquirer");
-// const fs = require("fs");
-
-// process.stdout.write("\033c");//clear terminal
-
 const TicTacToe = (() => {
 	const inquirer = require("inquirer");
 	const fs = require("fs");
@@ -82,7 +77,6 @@ const TicTacToe = (() => {
 			const gameResult = await simulationTurnLoop(game);
 			simulations.push(gameResult);
 		}
-		// console.log(JSON.stringify(simulations));
 
 		fs.writeFile("tictactoe-simulations.json", JSON.stringify(simulations), "utf8", (err) => console.error(err));
 		return simulations;
@@ -199,6 +193,7 @@ const TicTacToe = (() => {
 	}
 
 	return {
+		deepCopy,
 		Game,
 		startGame,
 		newGame,
