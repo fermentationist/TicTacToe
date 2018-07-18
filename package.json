@@ -17,8 +17,10 @@
   },
   "homepage": "https://github.com/fermentationist/TicTacToe#readme",
   "dependencies": {
+    "gaussian": "^1.1.0",
     "inquirer": "^6.0.0",
     "mathjs": "^5.0.3",
+    "random": "^2.0.12",
     "sigmoid": "0.0.1"
   }
 }
