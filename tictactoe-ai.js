@@ -84,39 +84,24 @@ const NeuralNetwork = (() => {
 		}
 	}
 
-		// layer: 0
-		// synapses: {
-		// 	inputValues: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-		// 	weights: [.5, .5, .5, .5, 1, .5, .5, .5, .5],
-		// 	biases: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-		// 	get values () {
-		// 		if (!this.inputValues.length) {
-		// 			return console.log("this neuron has received no activation values.");
-		// 		}
-		// 		const inputs = math.matrix(this.inputValues);
-		// 		const weights = math.matrix(this.weights);
-		// 		const biases = math.matrix(this.biases);
-		// 		return math.add(math.multiply(inputs, weights), biases).valueOf();
-		// 	}
-		// }
-		// importTrainingData (data) {
+	class Layer {
+		constructor (neuronClass, numberOfNeurons, inputLayer) {
+			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
+		}
+	}
 
-		// }
-		// get activation () {
-		// 	const reLu = (x) => x <= 0 ? x * .01 : x;//"leaky" ReLu
-		// 	const weightedInputValues = this.synapses.values;
-		// 	console.log('weightedInputValues', weightedInputValues)
-		// 	return weightedInputValues ? reLu(math.sum(weightedInputValues)): console.log("Could not process data.");
-		// }
+	const layer0 = new Layer(InputNeuron, 9, 1);
+	console.log('\nlayer0', layer0);
 
+	const layer1 = new Layer(HiddenNeuron, 9, layer0.neurons);
+	console.log('\nlayer1', layer1);
 
-	// const Layer = {
-	// 	init: () => {
+	const layer2 = new Layer(HiddenNeuron, 3, layer1.neurons);
+	console.log('\nlayer2', layer2);
 
-	// 	},
-	// 	neurons: [],
+	const layer3 = new Layer(OutputNeuron, 1, layer2.neurons);
+	console.log('\nlayer3', layer3);
 
-	// }
 
 	const inputNeuron = new InputNeuron(5);
 	console.log("inputNeuron = ", JSON.stringify(inputNeuron));
