@@ -33,6 +33,12 @@ const NeuralNetwork = (() => {
 		});
 	}
 
+	const crossEntropyLossFunction = (predictions, actuals) => {
+		return predictions.reduce((accum, prediction, i) =>{
+			return accum - ((actuals[i] || actuals[actuals.length - 1]) * Math.log(prediction));
+		},0);
+	}
+
 	const adjustedRandomGaussian = (inputLayerSize, activationFn, precision = 4) => {
 		const rnd = randomGaussian();
 		if (activationFn.toLowerCase() === "relu") {
@@ -60,10 +66,8 @@ const NeuralNetwork = (() => {
 			if (!this.activationFn) {
 				return this.inputs;
 			}
-			if (this.activationFn.name.toLowerCase() === "softmax") {
-				return this.activationFn(this.weightedInputs);
-			}
-			return this.activationFn(math.multiply(this.inputs, this.weights) + this.bias);
+			
+			return this.activationFn(math.sum(this.weightedInputs) + this.bias);
 		}
 	}
 	class InputNeuron extends Neuron {
@@ -79,39 +83,61 @@ const NeuralNetwork = (() => {
 	}
 
 	class OutputNeuron extends Neuron {
-		constructor (inputLayer) {
+		constructor (inputLayer, lossFn = crossEntropyLossFunction, classLabels = ["lose", "draw", "win"]) {
 			super(softmax, inputLayer);
+			this.lossFn = lossFn;
+			this.actuals = [0.33, 0.33, 0.33];
+			this.classLabels = classLabels;
 		}
+		get error () {
+			console.log("$$");
+			console.log('this.actuals', this.actuals);
+			console.log('this.outputSignal', this.outputSignal);
+			console.log('this.lossFn', this.lossFn);
+			return this.lossFn(this.outputSignal, this.actuals);
+		}
+		get prediction () {
+			const certainty = math.max(this.outputSignal);
+			const labelIndex =  this.outputSignal.indexOf(certainty) - 1;
+			const prediction = this.classLabels[labelIndex];
+			console.log('prediction', prediction);
+			console.log('certainty', certainty);
+			return [prediction, certainty];
+		}
+		get outputSignal () {
+			return this.activationFn(this.weightedInputs);
+		}
+		
 	}
 
 	class Layer {
 		constructor (neuronClass, numberOfNeurons, inputLayer) {
 			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
 		}
+		get outputSignal () {
+			return this.neurons.map(neuron => neuron.outputSignal);
+		}
 	}
 
 	const layer0 = new Layer(InputNeuron, 9, 1);
-	console.log('\nlayer0', layer0);
+	console.log('\nlayer0', layer0.outputSignal);
 
-	const layer1 = new Layer(HiddenNeuron, 9, layer0.neurons);
-	console.log('\nlayer1', layer1);
+	const layer1 = new Layer(HiddenNeuron, 9, layer0.outputSignal);
+	console.log('\nlayer1', layer1.outputSignal);
 
-	const layer2 = new Layer(HiddenNeuron, 3, layer1.neurons);
-	console.log('\nlayer2', layer2);
+	const layer2 = new Layer(HiddenNeuron, 8, layer1.outputSignal);
+	console.log('\nlayer2', layer2.outputSignal);
 
-	const layer3 = new Layer(OutputNeuron, 1, layer2.neurons);
-	console.log('\nlayer3', layer3);
+	const layer3 = new Layer(HiddenNeuron, 3, layer2.outputSignal);
+	console.log('\nlayer3', layer3.outputSignal);
 
+	const layer4 = new Layer(OutputNeuron, 1, layer3.outputSignal);
+	console.log('\nlayer4', layer4.outputSignal);
+	console.log('\nJSON.stringify(layer3)', JSON.stringify(layer3));
 
-	const inputNeuron = new InputNeuron(5);
-	console.log("inputNeuron = ", JSON.stringify(inputNeuron));
-	console.log('inputNeuron.outputSignal', inputNeuron.outputSignal);
-	const hiddenNeuron = new HiddenNeuron([1,0,-1,-1,0,1,0,0,0]);
-	console.log('hiddenNeuron', hiddenNeuron)
-	console.log('hiddenNeuron.outputSignal', hiddenNeuron.outputSignal);
-	const outputNeuron = new OutputNeuron([3.44,2,-.5]);
-	console.log('outputNeuron', outputNeuron)
-	console.log('outputNeuron.outputSignal', outputNeuron.outputSignal);
+	console.log("error = ", layer4.neurons[0].error);
+
+	console.log("")
 
 	return {
 		Neuron

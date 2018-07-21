@@ -11,7 +11,7 @@ const TicTacToe = (() => {
 		history: {
 			playerOne: null,
 			moves: [],
-			result: null	
+			outcome: null	
 		}
 	}
 
@@ -85,7 +85,7 @@ const TicTacToe = (() => {
 	const simulationTurnLoop = async function (game) {
 		let winner = determineWinner(game);
 		if (winner){
-			game.history.result = winner;
+			game.history.outcome = winner;
 			return game.history;
 		}
 		const move =  await getStupidComputerMove(game);
@@ -99,7 +99,7 @@ const TicTacToe = (() => {
 	const turnLoop = async function (game) {
 		let winner = determineWinner(game);
 		if (winner){
-			game.history.result = winner;
+			game.history.outcome = winner;
 			clearTerminal();
 			displayGrid(game);
 			console.log("\n\nGame over!");
