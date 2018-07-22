@@ -50,6 +50,10 @@ const NeuralNetwork = (() => {
 		return rnd.toFixed(precision);	
 	}
 
+	const adamOptimizer = () => {
+
+	}
+
 	class Neuron {
 		constructor (activationFn, inputLayer) {
 			this.activationFn = activationFn;// || function(x){return x};
@@ -93,7 +97,6 @@ const NeuralNetwork = (() => {
 			console.log("$$");
 			console.log('this.actuals', this.actuals);
 			console.log('this.outputSignal', this.outputSignal);
-			console.log('this.lossFn', this.lossFn);
 			return this.lossFn(this.outputSignal, this.actuals);
 		}
 		get prediction () {
