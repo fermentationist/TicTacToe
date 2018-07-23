@@ -12,10 +12,6 @@ console.log('weight', weight);
 
 
 const NeuralNetwork = (() => {
-	const inputLayer0Size = 9;
-	const hiddenLayer1Size = 8;
-	const hiddenLayer2Size = 3;
-	const outputLayerSize = 1;
 
 	const reLu = (input, derivative = false, a = .01) => {
 		if (derivative) {
@@ -51,13 +47,23 @@ const NeuralNetwork = (() => {
 		});
 	}
 
-	const crossEntropyLossFunction = (predictions, labels) => {
+	const crossEntropyCostFunction = (predictions, labels, derivative = false) => {
+		console.log('predictions, labels, derivative', predictions, labels, derivative)
+		if (derivative) {
+			return crossEntropyPrime(predictions, labels);
+		}
 		return predictions.reduce((accum, prediction, i) =>{
 			return accum - ((labels[i] || labels[labels.length - 1]) * Math.log(prediction));
 		},0);
 	}
 
-	console.log("% ", crossEntropyLossFunction([.5, .65, 0.01, .99], [0, .5, 0, 1]))
+	const crossEntropyPrime = (predictions, labels) => {
+		return predictions.reduce((accum, prediction, i) =>{
+			return accum + 1 / prediction;
+		},0);
+	}
+
+	console.log("% ", crossEntropyCostFunction([.5, .65, 0.01, .99], [0, .5, 0, 1]))
 
 
 
@@ -72,17 +78,13 @@ const NeuralNetwork = (() => {
 		return rnd.toFixed(precision);	
 	}
 
-	const adamOptimizer = () => {
-		let learningRate = 0.001;
 
-
-
-	}
 
 	class Neuron {
 		constructor (activationFn, inputLayer) {
 			this.activationFn = activationFn;// || function(x){return x};
 			this.inputs = inputLayer || [];
+			this.learningRate = 0.5;
 			if (this.inputs.length > 1) {
 				this.weights = inputLayer.map((input) => adjustedRandomGaussian(inputLayer.length, this.activationFn.name));
 				this.bias = 0;
@@ -98,7 +100,29 @@ const NeuralNetwork = (() => {
 			
 			return this.activationFn(math.sum(this.weightedInputs) + this.bias);
 		}
+		updateWeightsAndBias (errors) {
+			const costPrime = errors ? errors : this.costFn(this.inputs, this.labels, true);
+			console.log('costPrime', costPrime);
+			const deltaB = this.activationFn(this.bias, true) * costPrime;
+			const deltaW = this.inputs.map((z) => {
+				console.log('z', z)
+				let result = this.activationFn(this.weightedInputs, true).map(n => n * z * costPrime);
+				console.log('result', result);
+				return result;
+			});
+			this.weights.map((weight, i) => {
+				console.log('i', i)
+				console.log('> deltaW', deltaW);
+				console.log('weight =>', weight);
+				weight -= this.learningRate * deltaW[i];
+				console.log('deltaW[i]', deltaW);
+				console.log('new weight', weight);
+			});
+			this.bias -= this.learningRate * deltaB;
+			return costPrime;
+		}
 	}
+
 	class InputNeuron extends Neuron {
 		constructor (initialValue) {
 			super(null, initialValue);
@@ -112,9 +136,9 @@ const NeuralNetwork = (() => {
 	}
 
 	class OutputNeuron extends Neuron {
-		constructor (inputLayer, lossFn = crossEntropyLossFunction, classLabels = ["lose", "draw", "win"]) {
+		constructor (inputLayer, costFn = crossEntropyCostFunction, classLabels = ["lose", "draw", "win"]) {
 			super(softmax, inputLayer);
-			this.lossFn = lossFn;
+			this.costFn = costFn;
 			this.labels = [0.33, 0.33, 0.33];
 			this.classLabels = classLabels;
 		}
@@ -122,7 +146,7 @@ const NeuralNetwork = (() => {
 			console.log("$$");
 			console.log('this.labels', this.labels);
 			console.log('this.outputSignal', this.outputSignal);
-			return this.lossFn(this.outputSignal, this.labels);
+			return this.costFn(this.outputSignal, this.labels);
 		}
 		get prediction () {
 			const certainty = math.max(this.outputSignal);
@@ -135,7 +159,6 @@ const NeuralNetwork = (() => {
 		get outputSignal () {
 			return this.activationFn(this.weightedInputs);
 		}
-		
 	}
 
 	class Layer {
@@ -144,6 +167,9 @@ const NeuralNetwork = (() => {
 		}
 		get outputSignal () {
 			return this.neurons.map(neuron => neuron.outputSignal);
+		}
+		backprop (errors = null) {
+			return this.neurons.map(neuron => neuron.updateWeightsAndBias(errors));
 		}
 	}
 
@@ -161,11 +187,8 @@ const NeuralNetwork = (() => {
 
 	const layer4 = new Layer(OutputNeuron, 1, layer3.outputSignal);
 	console.log('\nlayer4', layer4.outputSignal);
-	console.log('\nJSON.stringify(layer3)', JSON.stringify(layer3));
 
-	console.log("error = ", layer4.neurons[0].error);
-
-	console.log("")
+	layer2.backprop(layer3.backprop(layer4.backprop()));
 
 	return {
 		Neuron
