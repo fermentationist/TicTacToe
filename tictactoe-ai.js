@@ -17,11 +17,17 @@ const NeuralNetwork = (() => {
 	const hiddenLayer2Size = 3;
 	const outputLayerSize = 1;
 
-	const reLu = (input, a = .01) => {
+	const reLu = (input, derivative = false, a = .01) => {
+		if (derivative) {
+			return Array.isArray(input) ? input.map((x) => x <= 0 ? a : 1) : input <= 0 ? a : 1;
+		}
 		return Array.isArray(input) ? input.map((x) => x < 0 ? a * x : x) : input < 0 ? a * input : input;
 		}//"leaky" ReLu function, where a represents "leakiness". Works on arrays or a single number
 
-	const softmax = (arrayZ) => {
+	const softmax = (arrayZ, derivative = false) => {
+		if (derivative) {
+			return softmaxPrime(arrayZ);
+		}
 		if (!Array.isArray(arrayZ)){
 			console.log("not an array");
 			arrayZ = [arrayZ];
@@ -33,11 +39,27 @@ const NeuralNetwork = (() => {
 		});
 	}
 
-	const crossEntropyLossFunction = (predictions, actuals) => {
+	const softmaxPrime = (arrayZ) => {
+		if (!Array.isArray(arrayZ)){
+			console.log("not an array");
+			arrayZ = [arrayZ];
+		}
+		let denominator = arrayZ.reduce((sum, elementK) => sum + (elementK * Math.exp(elementK - 1)), 0);
+		return arrayZ.map((elementJ) => {
+			let numerator = elementJ * Math.exp(elementJ - 1);
+			return numerator/denominator;
+		});
+	}
+
+	const crossEntropyLossFunction = (predictions, labels) => {
 		return predictions.reduce((accum, prediction, i) =>{
-			return accum - ((actuals[i] || actuals[actuals.length - 1]) * Math.log(prediction));
+			return accum - ((labels[i] || labels[labels.length - 1]) * Math.log(prediction));
 		},0);
 	}
+
+	console.log("% ", crossEntropyLossFunction([.5, .65, 0.01, .99], [0, .5, 0, 1]))
+
+
 
 	const adjustedRandomGaussian = (inputLayerSize, activationFn, precision = 4) => {
 		const rnd = randomGaussian();
@@ -48,6 +70,13 @@ const NeuralNetwork = (() => {
 			return (rnd * Math.sqrt(1/inputLayerSize)).toFixed(precision);
 		}
 		return rnd.toFixed(precision);	
+	}
+
+	const adamOptimizer = () => {
+		let learningRate = 0.001;
+
+
+
 	}
 
 	class Neuron {
@@ -86,15 +115,14 @@ const NeuralNetwork = (() => {
 		constructor (inputLayer, lossFn = crossEntropyLossFunction, classLabels = ["lose", "draw", "win"]) {
 			super(softmax, inputLayer);
 			this.lossFn = lossFn;
-			this.actuals = [0.33, 0.33, 0.33];
+			this.labels = [0.33, 0.33, 0.33];
 			this.classLabels = classLabels;
 		}
 		get error () {
 			console.log("$$");
-			console.log('this.actuals', this.actuals);
+			console.log('this.labels', this.labels);
 			console.log('this.outputSignal', this.outputSignal);
-			console.log('this.lossFn', this.lossFn);
-			return this.lossFn(this.outputSignal, this.actuals);
+			return this.lossFn(this.outputSignal, this.labels);
 		}
 		get prediction () {
 			const certainty = math.max(this.outputSignal);
