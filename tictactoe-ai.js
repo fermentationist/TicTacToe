@@ -63,7 +63,7 @@ const NeuralNetwork = (() => {
 		},0);
 	}
 
-	console.log("% ", crossEntropyCostFunction([.5, .65, 0.01, .99], [0, .5, 0, 1]))
+	console.log("% ", crossEntropyCostFunction([.5, .65, 0.01, .99], [0, .5, 0, 1], true))
 
 
 
@@ -101,24 +101,31 @@ const NeuralNetwork = (() => {
 			return this.activationFn(math.sum(this.weightedInputs) + this.bias);
 		}
 		updateWeightsAndBias (errors) {
+			console.log('errors', errors);
 			const costPrime = errors ? errors : this.costFn(this.inputs, this.labels, true);
-			console.log('costPrime', costPrime);
+			console.log('costPrime a', costPrime);
 			const deltaB = this.activationFn(this.bias, true) * costPrime;
-			const deltaW = this.inputs.map((z) => {
-				console.log('z', z)
-				let result = this.activationFn(this.weightedInputs, true).map(n => n * z * costPrime);
-				console.log('result', result);
+			console.log('this.weightedInputs', this.weightedInputs);
+			const deltaW = this.inputs.map((input) => {
+				console.log('input', input)
+				let result = this.activationFn(this.weightedInputs, true).map((weight, i) => {
+					weight * input * costPrime[i];
+				});
+				
+				// console.log('result', result);
 				return result;
 			});
 			this.weights.map((weight, i) => {
-				console.log('i', i)
-				console.log('> deltaW', deltaW);
-				console.log('weight =>', weight);
+				// console.log('i', i)
+				// console.log('> deltaW', deltaW);
+				// console.log('weight =>', weight);
 				weight -= this.learningRate * deltaW[i];
-				console.log('deltaW[i]', deltaW);
-				console.log('new weight', weight);
+				// console.log('deltaW[i]', deltaW[i]);
+				// console.log('new weight', weight);
 			});
 			this.bias -= this.learningRate * deltaB;
+
+			console.log('costPrime b', costPrime);
 			return costPrime;
 		}
 	}
@@ -188,7 +195,7 @@ const NeuralNetwork = (() => {
 	const layer4 = new Layer(OutputNeuron, 1, layer3.outputSignal);
 	console.log('\nlayer4', layer4.outputSignal);
 
-	layer2.backprop(layer3.backprop(layer4.backprop()));
+	layer2.backprop(layer3.backprop(layer4.backprop(layer4.costFn(layer4.inputs, layer4.labels, true))));
 
 	return {
 		Neuron
