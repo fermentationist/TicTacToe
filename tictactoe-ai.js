@@ -195,7 +195,7 @@ const NeuralNetwork = (() => {
 	const layer4 = new Layer(OutputNeuron, 1, layer3.outputSignal);
 	console.log('\nlayer4', layer4.outputSignal);
 
-	layer2.backprop(layer3.backprop(layer4.backprop(layer4.costFn(layer4.inputs, layer4.labels, true))));
+	layer2.backprop(layer3.backprop(layer4.backprop()));
 
 	return {
 		Neuron
