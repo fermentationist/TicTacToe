@@ -25,7 +25,6 @@ const NeuralNetwork = (() => {
 			return softmaxPrime(arrayZ);
 		}
 		if (!Array.isArray(arrayZ)){
-			console.log("not an array");
 			arrayZ = [arrayZ];
 		}
 		let denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK), 0);
@@ -37,7 +36,6 @@ const NeuralNetwork = (() => {
 
 	const softmaxPrime = (arrayZ) => {
 		if (!Array.isArray(arrayZ)){
-			console.log("not an array");
 			arrayZ = [arrayZ];
 		}
 		let denominator = arrayZ.reduce((sum, elementK) => sum + (elementK * Math.exp(elementK - 1)), 0);
@@ -47,25 +45,18 @@ const NeuralNetwork = (() => {
 		});
 	}
 
-	const crossEntropyCostFunction = (predictions, labels, derivative = false) => {
-		console.log('predictions, labels, derivative', predictions, labels, derivative)
+	const crossEntropyCostFunction = (prediction, label, derivative = false) => {
+		let predictions = Array.isArray(prediction) ? prediction : [prediction];
+		console.log('prediction, label, derivative', prediction, label, derivative)
 		if (derivative) {
-			return crossEntropyPrime(predictions, labels);
+			return crossEntropyPrime(predictions, label);
 		}
-		return predictions.reduce((accum, prediction, i) =>{
-			return accum - ((labels[i] || labels[labels.length - 1]) * Math.log(prediction));
-		},0);
+		return predictions.map(prediction => -1 * label * Math.log(prediction));
 	}
 
-	const crossEntropyPrime = (predictions, labels) => {
-		return predictions.reduce((accum, prediction, i) =>{
-			return accum + 1 / prediction;
-		},0);
+	const crossEntropyPrime = (predictions, label) => {
+		return predictions.map(prediction => -1 * label / prediction);
 	}
-
-	console.log("% ", crossEntropyCostFunction([.5, .65, 0.01, .99], [0, .5, 0, 1], true))
-
-
 
 	const adjustedRandomGaussian = (inputLayerSize, activationFn, precision = 4) => {
 		const rnd = randomGaussian();
@@ -77,83 +68,95 @@ const NeuralNetwork = (() => {
 		}
 		return rnd.toFixed(precision);	
 	}
+	// ========================================================================
 
 
 
 	class Neuron {
-		constructor (activationFn, inputLayer) {
+		constructor (inputLayer, activationFn, costFn = crossEntropyCostFunction) {
 			this.activationFn = activationFn;// || function(x){return x};
 			this.inputs = inputLayer || [];
 			this.learningRate = 0.5;
+			this.costFn = costFn;
 			if (this.inputs.length > 1) {
 				this.weights = inputLayer.map((input) => adjustedRandomGaussian(inputLayer.length, this.activationFn.name));
 				this.bias = 0;
 			}
 		}
 		get weightedInputs () {
-			return math.dotMultiply(this.inputs, this.weights);
+			// console.log("weightedInputs called with this.inputs= " + this.inputs + " and this.weights= " + this.weights + " and this.bias= " + this.bias);
+			return math.dotMultiply(this.inputs, this.weights).map(product => product + this.bias);
+		}
+		get activatedInputs () {
+			// console.log("activatedInputs called");
+			if (!this.activationFn) {
+				return this.weightedInputs;
+			}
+			return this.activationFn(this.inputs); 
 		}
 		get outputSignal () {
+			// console.log("outputSignal called");
 			if (!this.activationFn) {
+				console.log("No activation function present, returning raw inputs...");
 				return this.inputs;
 			}
-			
-			return this.activationFn(math.sum(this.weightedInputs) + this.bias);
+			return math.sum(this.activatedInputs);
 		}
-		updateWeightsAndBias (errors) {
-			console.log('errors', errors);
-			const costPrime = errors ? errors : this.costFn(this.inputs, this.labels, true);
-			console.log('costPrime a', costPrime);
-			const deltaB = this.activationFn(this.bias, true) * costPrime;
-			console.log('this.weightedInputs', this.weightedInputs);
-			const deltaW = this.inputs.map((input) => {
+		updateWeightsAndBias (actual) {
+			const costPrime = this.costFn(this.activatedInputs, this.actual, true);
+			console.log('costPrime', costPrime);
+			const deltaB = this.activationFn(this.weightedInputs, true).reduce((accum, weight, i) => accum + weight * costPrime[i])
+			console.log('deltaB', deltaB);
+			// console.log('this.weightedInputs', this.weightedInputs);
+			const deltaW = this.inputs.map((input, i) => {
 				console.log('input', input)
-				let result = this.activationFn(this.weightedInputs, true).map((weight, i) => {
-					weight * input * costPrime[i];
-				});
+				let result = this.activationFn(this.weightedInputs[i], true) * input * costPrime[i];
 				
-				// console.log('result', result);
+				console.log('result', result);
 				return result;
 			});
-			this.weights.map((weight, i) => {
-				// console.log('i', i)
-				// console.log('> deltaW', deltaW);
-				// console.log('weight =>', weight);
+			console.log('deltaW', deltaW)
+			const newWeights = this.weights.map((weight, i) => {
+				console.log('> deltaW[i]', deltaW[i]);
+				console.log('weight =>', weight);
 				weight -= this.learningRate * deltaW[i];
-				// console.log('deltaW[i]', deltaW[i]);
-				// console.log('new weight', weight);
+				console.log('deltaW[i]', deltaW[i]);
+				console.log('new weight', weight);
+				return weight
 			});
-			this.bias -= this.learningRate * deltaB;
-
+			console.log('newWeights', newWeights);
+			const newBias = this.bias -= this.learningRate * deltaB;
+			this.weights = newWeights;
+			this.bias = newBias;
 			console.log('costPrime b', costPrime);
-			return costPrime;
+			console.log('actual', actual);
+			return actual;
 		}
 	}
 
 	class InputNeuron extends Neuron {
 		constructor (initialValue) {
-			super(null, initialValue);
+			super(initialValue, null);
 		}
 	}
 
 	class HiddenNeuron extends Neuron {
 		constructor (inputLayer) {
-			super(reLu, inputLayer);
+			super(inputLayer, softmax);
 		}
 	}
 
 	class OutputNeuron extends Neuron {
-		constructor (inputLayer, costFn = crossEntropyCostFunction, classLabels = ["lose", "draw", "win"]) {
-			super(softmax, inputLayer);
-			this.costFn = costFn;
-			this.labels = [0.33, 0.33, 0.33];
+		constructor (inputLayer, classLabels = ["lose", "draw", "win"]) {
+			super(inputLayer, softmax, crossEntropyCostFunction);
+			this.actual = 0.33;
 			this.classLabels = classLabels;
 		}
 		get error () {
 			console.log("$$");
-			console.log('this.labels', this.labels);
+			console.log('this.actual', this.actual);
 			console.log('this.outputSignal', this.outputSignal);
-			return this.costFn(this.outputSignal, this.labels);
+			return this.costFn(this.outputSignal, this.actual);
 		}
 		get prediction () {
 			const certainty = math.max(this.outputSignal);
@@ -162,9 +165,6 @@ const NeuralNetwork = (() => {
 			console.log('prediction', prediction);
 			console.log('certainty', certainty);
 			return [prediction, certainty];
-		}
-		get outputSignal () {
-			return this.activationFn(this.weightedInputs);
 		}
 	}
 
@@ -175,8 +175,15 @@ const NeuralNetwork = (() => {
 		get outputSignal () {
 			return this.neurons.map(neuron => neuron.outputSignal);
 		}
-		backprop (errors = null) {
-			return this.neurons.map(neuron => neuron.updateWeightsAndBias(errors));
+		get weights () {
+			return this.neurons.map(neuron =>  neuron.weights);
+		}
+		backprop (actuals) {
+			console.log('actual in backprop callL:', actuals)
+			let output =  this.neurons.map((neuron, i) => neuron.updateWeightsAndBias(actuals[i] || actuals[actuals.length - 1]));
+			console.log('output', output);
+			return output;
+
 		}
 	}
 
@@ -195,14 +202,19 @@ const NeuralNetwork = (() => {
 	const layer4 = new Layer(OutputNeuron, 1, layer3.outputSignal);
 	console.log('\nlayer4', layer4.outputSignal);
 
-	layer2.backprop(layer3.backprop(layer4.backprop()));
+	layer1.backprop(layer2.backprop(layer3.backprop(layer4.backprop([0.33]))));
 
-	return {
-		Neuron
+	// console.log('layer4.weights', layer4.weights);
+	// layer4.backprop([0.33]);
+	// console.log('layer4.weights', layer4.weights);
+	return { crossEntropyCostFunction,
+		Neuron,
+		layer4
 	}
 	
 
 })();
 
-
+let lossTest = NeuralNetwork.crossEntropyCostFunction([0.55, 0.99, 0.001], 1);
+console.log('lossTest', lossTest);
 
