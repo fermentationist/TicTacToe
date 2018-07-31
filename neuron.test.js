@@ -78,17 +78,41 @@ test("15 HiddenNeuron([0,1,2,-1], reLu).outputSignal", () => {
 	expect(reLuNeuron.outputSignal).toBeCloseTo(desiredOutput, 4);
 });
 
+// ====================================================
 
+const outNeuron = new OutputNeuron([0,1,2, -1]);
+
+test("16 OutputNeuron([0,1,2,-1]).activationFn.name to be 'softmax'", () => {
+	expect(outNeuron.activationFn.name).toEqual("softmax");
+});
+test("17 OutputNeuron([0,1,2,-1]).inputs = [0,1,2]", () => {
+	expect(outNeuron.inputs).toEqual([0,1,2, -1]);
+});
+test("18 OutputNeuron([0,1,2,-1]).weightedInputs = [0,outNeuron.weights[1],2 * outNeuron.weights[2], outNeuron.weights[3] * -1]", () => {
+	expect(outNeuron.weightedInputs).toEqual([0, outNeuron.weights[1], (outNeuron.weights[2] * 2), outNeuron.weights[3] * -1]);
+});
+test("19 OutputNeuron([0,1,2,-1]).activatedInputs = [0,outNeuron.weights[1],2 * outNeuron.weights[2]]", () => {
+	let a2 = softmax(1 * outNeuron.weights[1]);
+	let a3 = softmax(2 * outNeuron.weights[2]);
+	let a4 = softmax(-1 * outNeuron.weights[3]);
+	expect(outNeuron.activatedInputs).toEqual([0, a2, a3, a4]);
+});
+test("20 OutputNeuron([0,1,2,-1]).outputSignal", () => {
+	let [w1, w2, w3, w4] = outNeuron.weights;
+	let b = outNeuron.bias;
+	let desiredOutput = softmax((0 * w1 + b) + (1 * w2 + b) + (2 * w3 + b) + (-1 * w4 + b));
+	expect(outNeuron.outputSignal).toBeCloseTo(desiredOutput, 4);
+});
 
 
 
 console.log('\n\n\ninputNeuron.activationFn', inputNeuron.activationFn);
 
-test("16 softmax(number) returns [1]", () => {
+test("21 softmax(number) returns [1]", () => {
 	expect(softmax(rand)).toEqual([1]);
 });
 
-test("17 adjustedRandomGaussian(4, 'reLu') returns a non-zero number", () => {
+test("22 adjustedRandomGaussian(4, 'reLu') returns a non-zero number", () => {
 	let testResult = adjustedRandomGaussian(4, "reLu");
 	expect(typeof testResult).toBe("number");
 	expect(testResult).not.toEqual(0);
