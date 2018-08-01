@@ -138,7 +138,8 @@ test("23 OutputNeuron([1.8, 2, -1.75]).error", () => {
 	let threeOutError = threeOutNeuron.costFn(threeOutNeuron.guess, threeOutNeuron.actual);
 	console.log('threeOutError', threeOutError);
 	expect(threeOutNeuron.error).toEqual(threeOutError);
-	expect(typeof threeOutNeuron.error).toEqual("number");
+	expect(threeOutNeuron.error).not.toHaveLength(0);
+	expect(threeOutNeuron.error).toContain
 });
 
 
