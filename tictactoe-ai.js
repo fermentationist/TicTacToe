@@ -91,10 +91,7 @@ const NeuralNetwork = (() => {
 			
 			// 
 			const deltaW = this.inputs.map((input, i) => {
-				
 				let result = this.activationFn(this.weightedInputs[i], true) * input * costPrime[i];
-				
-				
 				return result;
 			});
 			
@@ -143,13 +140,16 @@ const NeuralNetwork = (() => {
 			return this.activationFn(this.weightedInputs);
 		}
 		get error () {
-			return this.costFn(this.outputSignal, this.actual);
+			return this.costFn(this.guess, this.actual);
 		}
 		get prediction () {
 			const certainty = math.max(this.outputSignal);
 			const labelIndex =  this.outputSignal.indexOf(certainty) - 1;
 			const prediction = this.classLabels[labelIndex];
 			return [prediction, certainty];
+		}
+		get guess () {
+			return this.outputSignal[2];
 		}
 	}
 

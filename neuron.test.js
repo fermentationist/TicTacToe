@@ -1,12 +1,11 @@
-const {adjustedRandomGaussian,
-		reLu,
+const {	reLu,
 		softmax,
 		crossEntropyCostFunction,
 		Neuron,
 		InputNeuron,
 		HiddenNeuron,
 		OutputNeuron,
-		Layer} = require("./tictactoe-ai.js");
+		Layer } = require("./tictactoe-ai.js");
 // const HiddenNeuron = require("./tictactoe-ai.js").HiddenNeuron;
 // const OutputNeuron = require("./tictactoe-ai.js").OutputNeuron;
 const randomGaussian = require("random").normal(mu = 0, sigma = 1);
@@ -108,26 +107,14 @@ test("20 OutputNeuron([0,1,2,-1]).outputSignal", () => {
 
 const threeOutNeuron = new OutputNeuron([1.8, 2, -1.75]);
 const labels = threeOutNeuron.classLabels;
-const certainty = mathjs.max(threeOutNeuron.outputSignal)
+const certainty = mathjs.max(threeOutNeuron.outputSignal);
 const threeOutPrediction = labels[threeOutNeuron.outputSignal.indexOf(certainty) - 1]
 test("21 OutputNeuron([1.8, 2, -1.75]).prediction", () => {
 	expect(threeOutNeuron.prediction).toEqual([threeOutPrediction, certainty]);
 });
 test("22 OutputNeuron([1.8, 2, -1.75]).error", () => {
-	let threeOutError = threeOutNeuron.costFn()
-	expect(threeOutNeuron.error).toBe();
-});
-
-console.log('\n\n\ninputNeuron.activationFn', inputNeuron.activationFn);
-
-test("f softmax(number) returns [1]", () => {
-	expect(softmax(rand)).toEqual([1]);
-});
-
-test("f adjustedRandomGaussian(4, 'reLu') returns a non-zero number", () => {
-	let testResult = adjustedRandomGaussian(4, "reLu");
-	expect(typeof testResult).toBe("number");
-	expect(testResult).not.toEqual(0);
+	let threeOutError = threeOutNeuron.costFn(threeOutNeuron.guess, threeOutNeuron.actual);
+	expect(threeOutNeuron.error).toEqual(threeOutError);
 });
 
 
