@@ -107,23 +107,24 @@ test("20 OutputNeuron([0,1,2,-1]).outputSignal", () => {
 });
 
 const threeOutNeuron = new OutputNeuron([1.8, 2, -1.75]);
-
+const labels = threeOutNeuron.classLabels;
+const certainty = mathjs.max(threeOutNeuron.outputSignal)
+const threeOutPrediction = labels[threeOutNeuron.outputSignal.indexOf(certainty) - 1]
 test("21 OutputNeuron([1.8, 2, -1.75]).prediction", () => {
-	let labels = threeOutNeuron.classLabels;
-	let certainty = mathjs.max(threeOutNeuron.outputSignal)
-	let prediction = labels[threeOutNeuron.outputSignal.indexOf(certainty) - 1];
-	expect(threeOutNeuron.prediction).toEqual([prediction, certainty]);
+	expect(threeOutNeuron.prediction).toEqual([threeOutPrediction, certainty]);
 });
-
-
+test("22 OutputNeuron([1.8, 2, -1.75]).error", () => {
+	let threeOutError = threeOutNeuron.costFn()
+	expect(threeOutNeuron.error).toBe();
+});
 
 console.log('\n\n\ninputNeuron.activationFn', inputNeuron.activationFn);
 
-test("21 softmax(number) returns [1]", () => {
+test("f softmax(number) returns [1]", () => {
 	expect(softmax(rand)).toEqual([1]);
 });
 
-test("22 adjustedRandomGaussian(4, 'reLu') returns a non-zero number", () => {
+test("f adjustedRandomGaussian(4, 'reLu') returns a non-zero number", () => {
 	let testResult = adjustedRandomGaussian(4, "reLu");
 	expect(typeof testResult).toBe("number");
 	expect(testResult).not.toEqual(0);
