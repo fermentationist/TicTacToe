@@ -149,7 +149,7 @@ const NeuralNetwork = (() => {
 			return [prediction, certainty];
 		}
 		get guess () {
-			return this.outputSignal[2];
+			return this.outputSignal[this.classLabels.indexOf("win")];
 		}
 	}
 
