@@ -137,19 +137,18 @@ const NeuralNetwork = (() => {
 			super(inputLayer, softmax, crossEntropyCostFunction);
 			this.actual = 0.33;
 			this.classLabels = classLabels;
+			this.bias = 0;
+		}
+		get outputSignal () {
+			return this.activationFn(this.weightedInputs);
 		}
 		get error () {
-			
-			
-			
 			return this.costFn(this.outputSignal, this.actual);
 		}
 		get prediction () {
 			const certainty = math.max(this.outputSignal);
 			const labelIndex =  this.outputSignal.indexOf(certainty) - 1;
 			const prediction = this.classLabels[labelIndex];
-			
-			
 			return [prediction, certainty];
 		}
 	}

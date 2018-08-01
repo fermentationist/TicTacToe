@@ -10,7 +10,7 @@ const {adjustedRandomGaussian,
 // const HiddenNeuron = require("./tictactoe-ai.js").HiddenNeuron;
 // const OutputNeuron = require("./tictactoe-ai.js").OutputNeuron;
 const randomGaussian = require("random").normal(mu = 0, sigma = 1);
-
+const mathjs = require("mathjs");
 const inputNeuron = new InputNeuron([1]);
 test("01 new InputNeuron([1]).inputs = [1]", () => {
 	expect(inputNeuron.inputs).toEqual([1]);
@@ -74,7 +74,7 @@ test("14 HiddenNeuron([0,1,2,-1], reLu).activatedInputs = [0,reLuNeuron.weights[
 test("15 HiddenNeuron([0,1,2,-1], reLu).outputSignal", () => {
 	let [w1, w2, w3, w4] = reLuNeuron.weights;
 	let b = reLuNeuron.bias;
-	let desiredOutput = reLu((0 * w1 + b) + (1 * w2 + b) + (2 * w3 + b) + (-1 * w4 + b));
+	let desiredOutput = reLu((0 * w1) + (1 * w2) + (2 * w3) + (-1 * w4) + b);
 	expect(reLuNeuron.outputSignal).toBeCloseTo(desiredOutput, 4);
 });
 
@@ -91,17 +91,28 @@ test("17 OutputNeuron([0,1,2,-1]).inputs = [0,1,2]", () => {
 test("18 OutputNeuron([0,1,2,-1]).weightedInputs = [0,outNeuron.weights[1],2 * outNeuron.weights[2], outNeuron.weights[3] * -1]", () => {
 	expect(outNeuron.weightedInputs).toEqual([0, outNeuron.weights[1], (outNeuron.weights[2] * 2), outNeuron.weights[3] * -1]);
 });
-test("19 OutputNeuron([0,1,2,-1]).activatedInputs = [0,outNeuron.weights[1],2 * outNeuron.weights[2]]", () => {
-	let a2 = softmax(1 * outNeuron.weights[1]);
-	let a3 = softmax(2 * outNeuron.weights[2]);
-	let a4 = softmax(-1 * outNeuron.weights[3]);
-	expect(outNeuron.activatedInputs).toEqual([0, a2, a3, a4]);
+test("19 OutputNeuron([0,1,2,-1]).activatedInputs", () => {
+	let a1 = 0 * outNeuron.weights[0];
+	let a2 = 1 * outNeuron.weights[1];
+	let a3 = 2 * outNeuron.weights[2];
+	let a4 = -1 * outNeuron.weights[3];
+	let expected = softmax([a1, a2, a3, a4]);
+	expect(outNeuron.activatedInputs).toEqual(expected);
 });
 test("20 OutputNeuron([0,1,2,-1]).outputSignal", () => {
 	let [w1, w2, w3, w4] = outNeuron.weights;
 	let b = outNeuron.bias;
-	let desiredOutput = softmax((0 * w1 + b) + (1 * w2 + b) + (2 * w3 + b) + (-1 * w4 + b));
-	expect(outNeuron.outputSignal).toBeCloseTo(desiredOutput, 4);
+	let desiredOutput = softmax([(0 * w1), (1 * w2), (2 * w3), (-1 * w4)]);
+	expect(outNeuron.outputSignal).toEqual(desiredOutput);
+});
+
+const threeOutNeuron = new OutputNeuron([1.8, 2, -1.75]);
+
+test("21 OutputNeuron([1.8, 2, -1.75]).prediction", () => {
+	let labels = threeOutNeuron.classLabels;
+	let certainty = mathjs.max(threeOutNeuron.outputSignal)
+	let prediction = labels[threeOutNeuron.outputSignal.indexOf(certainty) - 1];
+	expect(threeOutNeuron.prediction).toEqual([prediction, certainty]);
 });
 
 
