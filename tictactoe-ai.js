@@ -118,7 +118,7 @@ const NeuralNetwork = (() => {
 			return this.inputs;
 		}
 		get outputSignal () {
-			return this.inputs;
+			return this.inputs.length === 1 ? this.inputs[0] : this.inputs;
 		}
 	}
 
@@ -154,16 +154,27 @@ const NeuralNetwork = (() => {
 
 	class Layer {
 		constructor (neuronClass, numberOfNeurons, inputLayer) {
+			// this.neurons = Array(numberOfNeurons).fill(null);
+			if (neuronClass === InputNeuron) {
+				this.neurons = Array(numberOfNeurons).fill(null).map((arraySlot, index) => {
+					let inputValue = inputLayer[index];
+				 	return new InputNeuron([inputValue]);
+				 	
+				});
+			} else {
 			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
+			}
 		}
 		get outputSignal () {
-			return this.neurons.map(neuron => neuron.outputSignal[0]);
+			console.log("this.neurons", this.neurons);
+			return this.neurons.map(neuron => {
+				return neuron.outputSignal;
+			});
 		}
 		get weights () {
 			return this.neurons.map(neuron =>  neuron.weights);
 		}
 		backprop (actuals) {
-			
 			let output =  this.neurons.map((neuron, i) => neuron.updateWeightsAndBias(actuals[i] || actuals[actuals.length - 1]));
 			
 			return output;

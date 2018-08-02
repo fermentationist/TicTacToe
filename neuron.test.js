@@ -19,9 +19,9 @@ test("01.5 new InputNeuron([1]).weights.length = 0", () => {
 	let numWeights = inputNeuron.weights === null ? 0 : inputNeuron.weights.length;
 	expect(numWeights).toBe(0);
 });
-test("02 new InputNeuron([1]).outputSignal = [1]", () => {
-	expect(inputNeuron.outputSignal).toEqual([1]);
-	expect(Array.isArray(inputNeuron.inputs)).toEqual(true);
+test("02 new InputNeuron([1]).outputSignal = 1", () => {
+	expect(inputNeuron.outputSignal).toEqual(1);
+	expect(typeof inputNeuron.outputSignal).toBe("number");
 });
 test("03 new InputNeuron([1]).weightedInputs = [1]", () => {
 	expect(inputNeuron.weightedInputs).toEqual([1]);
@@ -50,7 +50,7 @@ test("06.5 zeroed HiddenNeuron(testInputs, softmax).weights.length = numInputs",
 });
 test("07 zeroed HiddenNeuron(testInputs, softmax).outputSignal = 1", () => {
 	expect(zeroedNeuron.outputSignal).toEqual([1]);
-	expect(Array.isArray(inputNeuron.outputSignal)).toEqual(true);
+	expect(Array.isArray(zeroedNeuron.outputSignal)).toEqual(true);
 });
 test("08 zeroed HiddenNeuron(testInputs, softmax).weightedInputs = testInputs", () => {
 	expect(zeroedNeuron.weightedInputs.reduce((a,b) => a + b)).toEqual(0);
