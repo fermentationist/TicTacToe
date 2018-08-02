@@ -94,7 +94,6 @@ const NeuralNetwork = (() => {
 				let result = this.activationFn(this.weightedInputs[i], true) * input * costPrime[i];
 				return result;
 			});
-			
 			const newWeights = this.weights.map((weight, i) => {
 				weight -= this.learningRate * deltaW[i];
 				return weight
@@ -158,7 +157,7 @@ const NeuralNetwork = (() => {
 			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
 		}
 		get outputSignal () {
-			return this.neurons.map(neuron => neuron.outputSignal);
+			return this.neurons.map(neuron => neuron.outputSignal[0]);
 		}
 		get weights () {
 			return this.neurons.map(neuron =>  neuron.weights);
