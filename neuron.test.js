@@ -102,11 +102,7 @@ test("15 HiddenNeuron([0,1,2,-1], reLu).outputSignal", () => {
 // ====================================================
 
 const outNeuron = new OutputNeuron([0,1,2, -1]);
-
-test("16 OutputNeuron([0,1,2,-1]).activationFn.name to be 'softmax'", () => {
-	expect(outNeuron.activationFn.name).toEqual("softmax");
-});
-test("16.5 OutputNeuron([0,1,2,-1]).weights.length = 4", () => {
+test("16 OutputNeuron([0,1,2,-1]).weights.length = 4", () => {
 	expect(outNeuron.weights.length).toBe(4);
 });
 test("17 OutputNeuron([0,1,2,-1]).inputs = [0,1,2]", () => {
@@ -117,46 +113,15 @@ test("18 OutputNeuron([0,1,2,-1]).weightedInputs = [0,outNeuron.weights[1],2 * o
 	expect(outNeuron.weightedInputs).toEqual([0, outNeuron.weights[1], (outNeuron.weights[2] * 2), outNeuron.weights[3] * -1]);
 	expect(Array.isArray(outNeuron.weightedInputs)).toEqual(true);
 });
-test("19 OutputNeuron([0,1,2,-1]).activatedInputs", () => {
-	let a1 = 0 * outNeuron.weights[0];
-	let a2 = 1 * outNeuron.weights[1];
-	let a3 = 2 * outNeuron.weights[2];
-	let a4 = -1 * outNeuron.weights[3];
-	let expected = softmax([a1, a2, a3, a4]);
-	expect(outNeuron.activatedInputs).toEqual(expected);
-	expect(Array.isArray(outNeuron.activatedInputs)).toEqual(true);
-});
-test("20 OutputNeuron([0,1,2,-1]).outputSignal", () => {
-	let [w1, w2, w3, w4] = outNeuron.weights;
-	let b = outNeuron.bias;
-	let desiredOutput = softmax([(0 * w1), (1 * w2), (2 * w3), (-1 * w4)]);
-	expect(outNeuron.outputSignal).toEqual(desiredOutput);
-	expect(Array.isArray(outNeuron.outputSignal)).toEqual(true);
-});
+
 
 const threeOutNeuron = new OutputNeuron([1.8, 2, -1.75]);
-const labels = threeOutNeuron.classLabels;
-const certainty = mathjs.max(threeOutNeuron.outputSignal);
-const threeOutPrediction = labels[threeOutNeuron.outputSignal.indexOf(certainty) - 1]
-test("21 OutputNeuron([1.8, 2, -1.75]).prediction", () => {
-	expect(threeOutNeuron.prediction).toEqual([threeOutPrediction, certainty]);
-	expect(Array.isArray(threeOutNeuron.prediction)).toEqual(true);
-});
+
+
 test("21.5 OutputNeuron([1.8, 2, -1.75]).weights.length = 4", () => {
 	expect(threeOutNeuron.weights.length).toBe(3);
 });
-test("22 OutputNeuron([1.8, 2, -1.75]).guess", () => {
-	let guess = threeOutNeuron.outputSignal[2]
-	expect(threeOutNeuron.guess).toEqual(guess);
-	expect(typeof threeOutNeuron.guess).toEqual("number");
-});
-test("23 OutputNeuron([1.8, 2, -1.75]).error", () => {
-	let threeOutError = threeOutNeuron.costFn(threeOutNeuron.guess, threeOutNeuron.actual);
-	console.log('threeOutError', threeOutError);
-	expect(threeOutNeuron.error).toEqual(threeOutError);
-	expect(threeOutNeuron.error).not.toHaveLength(0);
-	expect(threeOutNeuron.error).toContain
-});
+
 
 
 
