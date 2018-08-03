@@ -1,3 +1,4 @@
+ const cTable = require("console.table");
  const {	reLu,
 		softmax,
 		crossEntropyCostFunction,
@@ -37,9 +38,11 @@ test("07 OutputLayer(3, layer1.outputSignal).outputSignal is Array", () => {
 // test("08 OutputLayer(3, layer1.outputSignal).results add to 1", () => {
 // 	expect(Object.values(layer2.results).reduce((s,n) => s + n)).toBeCloseTo(1, 8);
 // });
-
+console.table(layer2.weights);
+console.log(layer2.weights[0]);
 console.log(layer2.results);
 layer2.actuals = [0,1,0];
 console.log('layer2.actuals', layer2.actuals);
 layer1.backprop(layer2.backprop(layer2.actuals));
 console.log(layer2.results);
+console.table(layer2.weights);
