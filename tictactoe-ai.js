@@ -66,24 +66,10 @@ const NeuralNetwork = (() => {
 
 
 	class Neuron {
-		constructor (inputLayer, activationFn, costFn = crossEntropyCostFunction) {
-			this.activationFn = activationFn;// || function(x){return x};
+		constructor (inputLayer) {
 			this.inputs = inputLayer || [];
-			this.learningRate = 0.5;
-			this.costFn = costFn;
 			this.weights = this.activationFn ? inputLayer.map((input) => adjustedRandomGaussian(inputLayer.length, this.activationFn.name)) : null;
 			this.bias = 0.001;
-			this.actual = [];
-		}
-		get weightedInputs () {
-			return math.dotMultiply(this.inputs, this.weights).map(n => n === -0 ? 0 : n);
-		}
-		get activatedInputs () {
-			return this.activationFn(this.weightedInputs).map(n => n === -0 ? 0 : n); 
-		}
-		get outputSignal () {
-			const weightedInputSum = math.sum(this.weightedInputs);
-			return this.activationFn(weightedInputSum + this.bias);
 		}
 		get error () {
 			return this.costFn(this.outputSignal, this.actual);
@@ -91,7 +77,7 @@ const NeuralNetwork = (() => {
 		updateWeightsAndBias () {
 			const costPrime = this.costFn(this.activatedInputs, this.actual, true);
 			
-			const deltaB = this.activationFn(this.weightedInputs, true).reduce((accum, weight, i) => accum + weight * costPrime[i])
+			const deltaB = this.activationFn(this.weightedInputs, true).reduce((accum, weight, i) => accum + weight * costPrime[i]);
 			
 			// 
 			const deltaW = this.inputs.map((input, i) => {
@@ -109,29 +95,6 @@ const NeuralNetwork = (() => {
 		}
 	}
 
-	class InputNeuron extends Neuron {
-		constructor (initialValue) {
-			super(initialValue, null);
-			this.weights = null;
-			this.bias = null;
-		}
-		get weightedInputs () {
-			return this.inputs;
-		}
-		get activatedInputs () {
-			return this.inputs;
-		}
-		get outputSignal () {
-			return this.inputs.length === 1 ? this.inputs[0] : this.inputs;
-		}
-	}
-
-	class HiddenNeuron extends Neuron {
-		constructor (inputLayer, activationFn = reLu) {
-			super(inputLayer, activationFn);
-		}
-	}
-
 	class OutputNeuron extends Neuron {
 		constructor (inputLayer, activationFn = reLu, classLabel) {
 			super(inputLayer, activationFn, crossEntropyCostFunction);
@@ -145,14 +108,18 @@ const NeuralNetwork = (() => {
 	}
 
 	class Layer {
-		constructor (neuronClass, numberOfNeurons, inputLayer) {
+		constructor (neuronClass, numberOfNeurons, inputLayer, activationFn, lossFn) {
 			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
 			this.labels = [];
 		}
+		get weightedInputs () {
+			return this.neurons.map(neuron => math.dotMultiply(neuron.inputs, ));
+		}
 		get outputSignal () {
-			return this.neurons.map(neuron => {
-				return neuron.outputSignal;
-			});
+			
+		}
+		get activations () {
+			return this.neurons.map(neuron => neuron.activation);
 		}
 		get weights () {
 			return this.neurons.map(neuron =>  neuron.weights);
@@ -172,6 +139,7 @@ const NeuralNetwork = (() => {
 			return this.neurons.map(neuron => neuron.updateWeightsAndBias());
 		}
 	}
+
 	class InputLayer extends Layer {
 		constructor (numberOfNeurons, inputLayer) {
 			super(InputNeuron, numberOfNeurons, inputLayer);
