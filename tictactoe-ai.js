@@ -73,6 +73,7 @@ const NeuralNetwork = (() => {
 			this.costFn = costFn;
 			this.weights = this.activationFn ? inputLayer.map((input) => adjustedRandomGaussian(inputLayer.length, this.activationFn.name)) : null;
 			this.bias = 0.001;
+			this.actual = [];
 		}
 		get weightedInputs () {
 			return math.dotMultiply(this.inputs, this.weights).map(n => n === -0 ? 0 : n);
@@ -84,7 +85,10 @@ const NeuralNetwork = (() => {
 			const weightedInputSum = math.sum(this.weightedInputs);
 			return this.activationFn(weightedInputSum + this.bias);
 		}
-		updateWeightsAndBias (actual) {
+		get error () {
+			return this.costFn(this.outputSignal, this.actual);
+		}
+		updateWeightsAndBias () {
 			const costPrime = this.costFn(this.activatedInputs, this.actual, true);
 			
 			const deltaB = this.activationFn(this.weightedInputs, true).reduce((accum, weight, i) => accum + weight * costPrime[i])
@@ -101,7 +105,7 @@ const NeuralNetwork = (() => {
 			const newBias = this.bias -= this.learningRate * deltaB;
 			this.weights = newWeights;
 			this.bias = newBias;
-			return actual;
+			return this.actual;
 		}
 	}
 
@@ -135,18 +139,6 @@ const NeuralNetwork = (() => {
 			this.classLabel = classLabel;
 			this.bias = 0;
 		}
-		// get outputSignal () {
-		// 	return this.activationFn(this.weightedInputs);
-		// }
-		get error () {
-			return this.costFn(this.guess, this.actual);
-		}
-		get prediction () {
-			const certainty = math.max(this.outputSignal);
-			const labelIndex =  this.outputSignal.indexOf(certainty) - 1;
-			const prediction = this.classLabels[labelIndex];
-			return [prediction, certainty];
-		}
 		get result () {
 			return [this.classLabel, this.outputSignal];
 		}
@@ -155,6 +147,7 @@ const NeuralNetwork = (() => {
 	class Layer {
 		constructor (neuronClass, numberOfNeurons, inputLayer) {
 			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
+			this.labels = [];
 		}
 		get outputSignal () {
 			return this.neurons.map(neuron => {
@@ -164,9 +157,19 @@ const NeuralNetwork = (() => {
 		get weights () {
 			return this.neurons.map(neuron =>  neuron.weights);
 		}
+		get errors () {
+			return this.neurons.map(neuron => neuron.error);
+		}
+		set actuals (actuals) {
+			this.labels = actuals;
+			this.neurons.map((neuron, i) => neuron.actual = actuals[i]);
+		}
+		get actuals (){
+			return this.labels;
+		}
 		backprop (actuals) {
-			const output =  this.neurons.map((neuron, i) => neuron.updateWeightsAndBias(actuals[i] || actuals[actuals.length - 1]));
-			return output;
+			this.actuals = actuals;
+			return this.neurons.map(neuron => neuron.updateWeightsAndBias());
 		}
 	}
 	class InputLayer extends Layer {
@@ -189,13 +192,17 @@ const NeuralNetwork = (() => {
 				neuron.classLabel = classLabels[i];
 			});
 		}
+		get rawResults () {
+			return this.neurons.map(neuron => neuron.result);
+		}
 		get results () {
 			const raw = this.rawResults.map(result => result[1]);
 			const normalized = softmax(raw);
-			return this.rawResults.map((result, i) => [result[0], normalized[i]]);
-		}
-		get rawResults () {
-			return this.neurons.map(neuron => neuron.result);
+			const output = {}
+			this.rawResults.map((result, i) => {
+				output[result[0]] = normalized[i];
+			});
+			return output;
 		}
 	}
 
@@ -213,8 +220,6 @@ const NeuralNetwork = (() => {
 		HiddenLayer,
 		OutputLayer
 	}
-	
-
 })();
 
 module.exports = NeuralNetwork;
