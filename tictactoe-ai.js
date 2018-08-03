@@ -5,13 +5,13 @@ const NeuralNetwork = (() => {
 	const randomGaussian = require("random").normal(mu = 0, sigma = 1);
 	const math = require("mathjs");
 
-	const adjustedRandomGaussian = (inputLayerSize, activationFnName) => {
+	const adjustedRandomGaussian = (inputLayerSize, activationFn) => {
 		const rnd = randomGaussian();
 		// console.log('\nrnd', rnd)
-		if (activationFnName.toLowerCase() === "relu") {
+		if (activationFn === null || activationFn.name.toLowerCase() === "relu") {
 			return (rnd * Math.sqrt(2/inputLayerSize));
 		}
-		if (activationFnName.toLowerCase() === "softmax" || "tanh") {
+		if (activationFn.name.toLowerCase() === "softmax" || "tanh") {
 			return (rnd * Math.sqrt(1/inputLayerSize));
 		}
 		return rnd;	
@@ -66,9 +66,9 @@ const NeuralNetwork = (() => {
 
 
 	class Neuron {
-		constructor (inputLayer) {
+		constructor (inputLayer, layerActivationFn) {
 			this.inputs = inputLayer || [];
-			this.weights = this.activationFn ? inputLayer.map((input) => adjustedRandomGaussian(inputLayer.length, this.activationFn.name)) : null;
+			this.weights = inputLayer.map((input) => adjustedRandomGaussian(inputLayer.length, layerActivationFn));
 			this.bias = 0.001;
 		}
 		get error () {
@@ -95,34 +95,57 @@ const NeuralNetwork = (() => {
 		}
 	}
 
-	class OutputNeuron extends Neuron {
-		constructor (inputLayer, activationFn = reLu, classLabel) {
-			super(inputLayer, activationFn, crossEntropyCostFunction);
-			this.actual = 0.33;
-			this.classLabel = classLabel;
+	class InputNeuron extends Neuron {
+		constructor (inputLayer) {
+			super(inputLayer, null);
+			this.weights = [];
 			this.bias = 0;
-		}
-		get result () {
-			return [this.classLabel, this.outputSignal];
 		}
 	}
 
+	class HiddenNeuron extends Neuron {
+		constructor (inputLayer) {
+			super(inputLayer, reLu);
+		}
+	}
+
+	class OutputNeuron extends Neuron {
+		constructor (inputLayer) {
+			super(inputLayer, softmax);
+		}
+	}
+
+	// class OutputNeuron extends Neuron {
+	// 	constructor (inputLayer, activationFn = reLu, classLabel) {
+	// 		super(inputLayer, activationFn, crossEntropyCostFunction);
+	// 		this.actual = 0.33;
+	// 		this.classLabel = classLabel;
+	// 		this.bias = 0;
+	// 	}
+	// 	get result () {
+	// 		return [this.classLabel, this.outputSignal];
+	// 	}
+	// }
+
 	class Layer {
-		constructor (neuronClass, numberOfNeurons, inputLayer, activationFn, lossFn) {
+		constructor (numberOfNeurons, neuronClass, inputLayer, activationFn, lossFn = crossEntropyCostFunction) {
 			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
 			this.labels = [];
 		}
 		get weightedInputs () {
-			return this.neurons.map(neuron => math.dotMultiply(neuron.inputs, ));
+			return math.multiply(this.activations, this.weights).map(n => n === -0 ? 0 : n);//second map statement is to replace negative zeroes with normal zeroes.
 		}
 		get outputSignal () {
-			
+			return this.activationFn(math.add(this.weights, this.biases));
 		}
 		get activations () {
-			return this.neurons.map(neuron => neuron.activation);
+			return this.neurons.map(neuron => neuron.inputs);
 		}
 		get weights () {
 			return this.neurons.map(neuron =>  neuron.weights);
+		}
+		get biases () {
+			return this.neurons.map(neuron => neuron.bias);
 		}
 		get errors () {
 			return this.neurons.map(neuron => neuron.error);
@@ -142,37 +165,46 @@ const NeuralNetwork = (() => {
 
 	class InputLayer extends Layer {
 		constructor (numberOfNeurons, inputLayer) {
-			super(InputNeuron, numberOfNeurons, inputLayer);
+			super(numberOfNeurons, InputNeuron, inputLayer);
 			this.neurons.map((neuron, i) => {
 					neuron.inputs = inputLayer[i];
 				});
 		}
+		get outputSignal () {
+			return this.neurons.map(neuron => neuron.inputs);
+		}
 	}
 	class HiddenLayer extends Layer {
 		constructor (numberOfNeurons, inputLayer) {
-			super(HiddenNeuron, numberOfNeurons, inputLayer);
+			super(numberOfNeurons, HiddenNeuron, inputLayer);
 		}
 	}
+
 	class OutputLayer extends Layer {
-		constructor (numberOfNeurons, inputLayer, classLabels = ["lose", "draw", "win"]) {
-			super(OutputNeuron, numberOfNeurons, inputLayer);
-			this.neurons.map((neuron, i) => {
-				neuron.classLabel = classLabels[i];
-			});
-		}
-		get rawResults () {
-			return this.neurons.map(neuron => neuron.result);
-		}
-		get results () {
-			const raw = this.rawResults.map(result => result[1]);
-			const normalized = softmax(raw);
-			const output = {}
-			this.rawResults.map((result, i) => {
-				output[result[0]] = normalized[i];
-			});
-			return output;
+		constructor (numberOfNeurons, inputLayer) {
+			super(numberOfNeurons, OutputNeuron, inputLayer);
 		}
 	}
+	// class OutputLayer extends Layer {
+	// 	constructor (numberOfNeurons, inputLayer, classLabels = ["lose", "draw", "win"]) {
+	// 		super(OutputNeuron, numberOfNeurons, inputLayer);
+	// 		this.neurons.map((neuron, i) => {
+	// 			neuron.classLabel = classLabels[i];
+	// 		});
+	// 	}
+	// 	get rawResults () {
+	// 		return this.neurons.map(neuron => neuron.result);
+	// 	}
+	// 	get results () {
+	// 		const raw = this.rawResults.map(result => result[1]);
+	// 		const normalized = softmax(raw);
+	// 		const output = {}
+	// 		this.rawResults.map((result, i) => {
+	// 			output[result[0]] = normalized[i];
+	// 		});
+	// 		return output;
+	// 	}
+	// }
 
 	return { 
 		adjustedRandomGaussian,
