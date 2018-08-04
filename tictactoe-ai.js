@@ -49,16 +49,17 @@ const NeuralNetwork = (() => {
 		});
 	}
 
-	const crossEntropyCostFunction = (prediction, label, derivative = false) => {
+	const crossEntropyCostFunction = (prediction, labels, derivative = false) => {
+		console.log('prediction, labels', prediction, labels);
 		let predictions = Array.isArray(prediction) ? prediction : [prediction];
 		if (derivative) {
-			return crossEntropyPrime(predictions, label);
+			return crossEntropyPrime(predictions, labels);
 		}
-		return predictions.map(prediction => -1 * label * Math.log(prediction));
+		return predictions.map((prediction, i) => -1 * labels[i] * Math.log(prediction));
 	}
 
-	const crossEntropyPrime = (predictions, label) => {
-		return predictions.map(prediction => -1 * label / prediction);
+	const crossEntropyPrime = (predictions, labels) => {
+		return predictions.map((prediction, i) => -1 * labels[i] / prediction);
 	}
 
 	// ========================================================================
@@ -86,7 +87,7 @@ const NeuralNetwork = (() => {
 			});
 			const newWeights = this.weights.map((weight, i) => {
 				weight -= this.learningRate * deltaW[i];
-				return weight
+				return weight;
 			});
 			const newBias = this.bias -= this.learningRate * deltaB;
 			this.weights = newWeights;
@@ -115,18 +116,6 @@ const NeuralNetwork = (() => {
 		}
 	}
 
-	// class OutputNeuron extends Neuron {
-	// 	constructor (inputLayer, activationFn = reLu, classLabel) {
-	// 		super(inputLayer, activationFn, crossEntropyCostFunction);
-	// 		this.actual = 0.33;
-	// 		this.classLabel = classLabel;
-	// 		this.bias = 0;
-	// 	}
-	// 	get result () {
-	// 		return [this.classLabel, this.outputSignal];
-	// 	}
-	// }
-
 	class Layer {
 		constructor (numberOfNeurons, neuronClass, inputLayer, activationFn, lossFn = crossEntropyCostFunction) {
 			this.activationFn = activationFn;
@@ -151,7 +140,10 @@ const NeuralNetwork = (() => {
 			return this.neurons.map(neuron => neuron.bias);
 		}
 		get errors () {
-			return this.neurons.map(neuron => neuron.error);
+			return this.lossFn(this.outputSignal, this.actuals);
+		}
+		get totalError () {
+			return this.errors.reduce((sum, error) => sum + error);
 		}
 		set actuals (actuals) {
 			this.labels = actuals;

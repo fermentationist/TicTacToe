@@ -60,6 +60,10 @@ console.log('inputLayer.outputSignal', inputLayer.outputSignal);
 // console.log('outputLayer.outputSignal', outputLayer.outputSignal);
 console.log('outputLayer.results', outputLayer.results);
 console.table(hiddenLayer.neurons);
+outputLayer.actuals = [0,1,0];
+console.log('outputLayer.actuals', outputLayer.actuals);
+console.log('outputLayer.errors', outputLayer.errors);
+console.log('outputLayer.totalError', outputLayer.totalError);
 test("outputLayer.outputSignal outputs total 1", () => {
 	expect(outputLayer.outputSignal.reduce((accum, output) => accum + output)).toBeCloseTo(1,5);
 })
