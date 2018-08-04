@@ -48,12 +48,19 @@
 
 const inputLayer = new InputLayer(9, [1, 0, 1, 0, -1, 0, -1, 0, 0]);
 const hiddenLayer = new HiddenLayer(8, inputLayer.outputSignal);
+const outputLayer = new OutputLayer(3, hiddenLayer.outputSignal);
+
 console.log('inputLayer.outputSignal', inputLayer.outputSignal);
 
-console.log('inputLayer', inputLayer);
-console.table('inputLayer.weights', inputLayer.weights);
-console.log('hiddenLayer.weights', hiddenLayer.weights);
-console.table('hiddenLayer.neurons', hiddenLayer.neurons);
-console.table('hiddenLayer.weightedInputs', hiddenLayer.weightedInputs);
-console.table('hiddenLayer.outputSignal', hiddenLayer.outputSignal);
+// console.log('inputLayer', inputLayer);
+// console.table('inputLayer.weights', inputLayer.weights);
+// console.log('outputLayer.weights', outputLayer.weights);
+// console.table('outputLayer.neurons', outputLayer.neurons);
+// console.table('outputLayer.weightedInputs', outputLayer.weightedInputs);
+// console.log('outputLayer.outputSignal', outputLayer.outputSignal);
+console.log('outputLayer.results', outputLayer.results);
+console.table(hiddenLayer.neurons);
+test("outputLayer.outputSignal outputs total 1", () => {
+	expect(outputLayer.outputSignal.reduce((accum, output) => accum + output)).toBeCloseTo(1,5);
+})
 test("fake", ()=>expect(true).toBe(true));

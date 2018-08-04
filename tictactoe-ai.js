@@ -129,14 +129,17 @@ const NeuralNetwork = (() => {
 
 	class Layer {
 		constructor (numberOfNeurons, neuronClass, inputLayer, activationFn, lossFn = crossEntropyCostFunction) {
+			this.activationFn = activationFn;
+			this.lossFn = lossFn;
 			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
 			this.labels = [];
 		}
 		get weightedInputs () {
-			return math.multiply(this.activations, this.weights).map(n => n === -0 ? 0 : n);//second map statement is to replace negative zeroes with normal zeroes.
+			return math.dotMultiply(this.activations, this.weights).map(n => n === -0 ? 0 : n);//second map statement is to replace negative zeroes with normal zeroes.
 		}
 		get outputSignal () {
-			return this.activationFn(math.add(this.weights, this.biases));
+			let weightedInputSum = this.weightedInputs.map(neuron => neuron.reduce((sum, value) => sum + value));
+			return this.activationFn(math.add(weightedInputSum, this.biases));
 		}
 		get activations () {
 			return this.neurons.map(neuron => neuron.inputs);
@@ -176,13 +179,20 @@ const NeuralNetwork = (() => {
 	}
 	class HiddenLayer extends Layer {
 		constructor (numberOfNeurons, inputLayer) {
-			super(numberOfNeurons, HiddenNeuron, inputLayer);
+			super(numberOfNeurons, HiddenNeuron, inputLayer, reLu);
 		}
 	}
 
 	class OutputLayer extends Layer {
-		constructor (numberOfNeurons, inputLayer) {
-			super(numberOfNeurons, OutputNeuron, inputLayer);
+		constructor (numberOfNeurons, inputLayer, classLabels = ["lose", "draw", "win"]) {
+			super(numberOfNeurons, OutputNeuron, inputLayer, softmax);
+			this.classLabels = classLabels;
+		}
+		get results () {
+			const results = {};
+			const outputs = this.outputSignal;
+			this.classLabels.map((label, i) => results[label] = outputs[i]);
+			return results;
 		}
 	}
 	// class OutputLayer extends Layer {
