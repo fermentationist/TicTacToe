@@ -70,71 +70,71 @@ const NeuralNetwork = (() => {
 
 
 
-	class Neuron {
-		constructor (inputLayer, layerActivationFn) {
-			this.inputs = inputLayer || [];
-			this.weights = inputLayer.map((input) => adjustedRandomGaussian(inputLayer.length, layerActivationFn));
-			this.bias = 0.001;
-		}
-		get error () {
-			return this.costFn(this.outputSignal, this.actual);
-		}
-		updateWeightsAndBias () {
-			const costPrime = this.costFn(this.activatedInputs, this.actual, true);
+	// class Neuron {
+	// 	constructor (inputLayer, layerActivationFn) {
+	// 		this.inputs = inputLayer || [];
+	// 		this.weights = inputLayer.map((input) => adjustedRandomGaussian(inputLayer.length, layerActivationFn));
+	// 		this.bias = 0.001;
+	// 	}
+	// 	get error () {
+	// 		return this.costFn(this.outputSignal, this.actual);
+	// 	}
+	// 	updateWeightsAndBias () {
+	// 		const costPrime = this.costFn(this.activatedInputs, this.actual, true);
 			
-			const deltaB = this.activationFn(this.weightedInputs, true).reduce((accum, weight, i) => accum + weight * costPrime[i]);
+	// 		const deltaB = this.activationFn(this.weightedInputs, true).reduce((accum, weight, i) => accum + weight * costPrime[i]);
 			
-			// 
-			const deltaW = this.inputs.map((input, i) => {
-				let result = this.activationFn(this.weightedInputs[i], true) * input * costPrime[i];
-				return result;
-			});
-			const newWeights = this.weights.map((weight, i) => {
-				weight -= this.learningRate * deltaW[i];
-				return weight;
-			});
-			const newBias = this.bias -= this.learningRate * deltaB;
-			this.weights = newWeights;
-			this.bias = newBias;
-			return this.actual;
-		}
-	}
+	// 		// 
+	// 		const deltaW = this.inputs.map((input, i) => {
+	// 			let result = this.activationFn(this.weightedInputs[i], true) * input * costPrime[i];
+	// 			return result;
+	// 		});
+	// 		const newWeights = this.weights.map((weight, i) => {
+	// 			weight -= this.learningRate * deltaW[i];
+	// 			return weight;
+	// 		});
+	// 		const newBias = this.bias -= this.learningRate * deltaB;
+	// 		this.weights = newWeights;
+	// 		this.bias = newBias;
+	// 		return this.actual;
+	// 	}
+	// }
 
-	class InputNeuron extends Neuron {
-		constructor (inputLayer) {
-			super(inputLayer, null);
-			this.weights = [];
-			this.bias = 0;
-		}
-	}
+	// class InputNeuron extends Neuron {
+	// 	constructor (inputLayer) {
+	// 		super(inputLayer, null);
+	// 		this.weights = [];
+	// 		this.bias = 0;
+	// 	}
+	// }
 
-	class HiddenNeuron extends Neuron {
-		constructor (inputLayer) {
-			super(inputLayer, reLu);
-		}
-	}
+	// class HiddenNeuron extends Neuron {
+	// 	constructor (inputLayer) {
+	// 		super(inputLayer, reLu);
+	// 	}
+	// }
 
-	class OutputNeuron extends Neuron {
-		constructor (inputLayer) {
-			super(inputLayer, softmax);
-		}
-	}
+	// class OutputNeuron extends Neuron {
+	// 	constructor (inputLayer) {
+	// 		super(inputLayer, softmax);
+	// 	}
+	// }
 
 	class Layer {
-		constructor (numberOfNeurons, neuronClass, inputLayer, activationFn, costFn = crossEntropyCostFunction) {
-			this.inputLayer = inputLayer;
+		constructor ({numberOfNeurons: size = 3, inputLayer: activations}, inputLayer, activationFn, costFn = crossEntropyCostFunction) {
+			this.activations = inputLayer;
 			this.activationFn = activationFn;
 			this.costFn = costFn;
-			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
+			this.neurons = Array(size).fill(null);
 			this.labels = [];
 			this.learningRate = 0.1;
 		}
 		set inputs (newInputs) {
-			this.inputLayer = newInputs;
+			this.activations = newInputs;
 		}
 		get weightedInputs () {
 			console.log('@this.activations, this.weights', this.activations, this.weights);
-			return negZeroFix(math.dotMultiply(this.activations, this.weights));
+			return negZeroFix(math.multiply(this.activations, this.transposedWeights));
 		}
 		get outputSignal () {
 			let weightedInputSum = this.weightedInputs.map(neuron => neuron.reduce((sum, value) => sum + value));
@@ -143,9 +143,6 @@ const NeuralNetwork = (() => {
 		get outputDeriv () {
 			let weightedInputSum = this.weightedInputs.map(neuron => neuron.reduce((sum, value) => sum + value));
 			return this.activationFn(math.add(weightedInputSum, this.biases, true));
-		}
-		get activations () {
-			return this.neurons.map(neuron => neuron.inputs);
 		}
 		get weights () {
 			return this.neurons.map(neuron => neuron.weights);
@@ -207,53 +204,53 @@ const NeuralNetwork = (() => {
 		}
 	}
 
-	class InputLayer extends Layer {
-		constructor (numberOfNeurons, inputLayer) {
-			super(numberOfNeurons, InputNeuron, inputLayer);
-			this.neurons.map((neuron, i) => {
-					neuron.inputs = inputLayer[i];
-				});
-		}
-		get outputSignal () {
-			return this.neurons.map(neuron => neuron.inputs);
-		}
-	}
-	class HiddenLayer extends Layer {
-		constructor (numberOfNeurons, inputLayer) {
-			super(numberOfNeurons, HiddenNeuron, inputLayer, reLu);
-		}
-	}
+	// class InputLayer extends Layer {
+	// 	constructor (numberOfNeurons, inputLayer) {
+	// 		super(numberOfNeurons, InputNeuron, inputLayer);
+	// 		this.neurons.map((neuron, i) => {
+	// 				neuron.inputs = inputLayer[i];
+	// 			});
+	// 	}
+	// 	get outputSignal () {
+	// 		return this.neurons.map(neuron => neuron.inputs);
+	// 	}
+	// }
+	// class HiddenLayer extends Layer {
+	// 	constructor (numberOfNeurons, inputLayer) {
+	// 		super(numberOfNeurons, HiddenNeuron, inputLayer, reLu);
+	// 	}
+	// }
 
-	class OutputLayer extends Layer {
-		constructor (numberOfNeurons, inputLayer, classLabels = ["lose", "draw", "win"]) {
-			super(numberOfNeurons, OutputNeuron, inputLayer, softmax);
-			this.classLabels = classLabels;
-		}
-		get results () {
-			const results = {};
-			const outputs = this.outputSignal;
-			this.classLabels.map((label, i) => results[label] = outputs[i]);
-			return results;
-		}
-		updateWeightsAndBiases () {
-			console.log(`updateWeightsAndBiases () called`)
-			const costDeriv = negZeroFix(this.costFn(this.outputSignal, this.actuals, true));
-			const deltaB = math.dotMultiply(costDeriv, this.outputDeriv);
-			const transposedActivations = math.transpose(this.activations);
-			const deltaW = math.multiply(transposedActivations, deltaB);
-			const newWeights = this.weights.map((neuronWeights, i) => {
-				let updatedWeight = math.subtract(neuronWeights, math.dotMultiply(this.learningRate, deltaW[i]));
-				return updatedWeight;
-			});
-			this.biases = math.subtract(this.biases, math.dotMultiply(this.learningRate, deltaB));
-			this.weights = newWeights;
-			console.log('😎this.weights', this.weights);
-			return {
-				delta: deltaB, 
-				weights: this.weights
-			};
-		}
-	}
+	// class OutputLayer extends Layer {
+	// 	constructor (numberOfNeurons, inputLayer, classLabels = ["lose", "draw", "win"]) {
+	// 		super(numberOfNeurons, OutputNeuron, inputLayer, softmax);
+	// 		this.classLabels = classLabels;
+	// 	}
+	// 	get results () {
+	// 		const results = {};
+	// 		const outputs = this.outputSignal;
+	// 		this.classLabels.map((label, i) => results[label] = outputs[i]);
+	// 		return results;
+	// 	}
+	// 	updateWeightsAndBiases () {
+	// 		console.log(`updateWeightsAndBiases () called`)
+	// 		const costDeriv = negZeroFix(this.costFn(this.outputSignal, this.actuals, true));
+	// 		const deltaB = math.dotMultiply(costDeriv, this.outputDeriv);
+	// 		const transposedActivations = math.transpose(this.activations);
+	// 		const deltaW = math.multiply(transposedActivations, deltaB);
+	// 		const newWeights = this.weights.map((neuronWeights, i) => {
+	// 			let updatedWeight = math.subtract(neuronWeights, math.dotMultiply(this.learningRate, deltaW[i]));
+	// 			return updatedWeight;
+	// 		});
+	// 		this.biases = math.subtract(this.biases, math.dotMultiply(this.learningRate, deltaB));
+	// 		this.weights = newWeights;
+	// 		console.log('😎this.weights', this.weights);
+	// 		return {
+	// 			delta: deltaB, 
+	// 			weights: this.weights
+	// 		};
+	// 	}
+	// }
 
 	class Network {
 		constructor (arrayOfLayers){
@@ -280,14 +277,10 @@ const NeuralNetwork = (() => {
 		reLu,
 		softmax,
 		crossEntropyCostFunction,
-		Neuron,
-		InputNeuron,
-		HiddenNeuron,
-		OutputNeuron,
 		Layer,
-		InputLayer,
-		HiddenLayer,
-		OutputLayer,
+		// InputLayer,
+		// HiddenLayer,
+		// OutputLayer,
 		Network
 	}
 })();
