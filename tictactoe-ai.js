@@ -121,13 +121,13 @@ const NeuralNetwork = (() => {
 	// }
 
 	class Layer {
-		constructor ({numberOfNeurons: size = 3, inputLayer: activations}, inputLayer, activationFn, costFn = crossEntropyCostFunction) {
+		constructor (layerSize, {inputLayer, activationFn, costFn = crossEntropyCostFunction, labels, learningRate} = {}) {
+			this.layerSize = layerSize;
 			this.activations = inputLayer;
 			this.activationFn = activationFn;
 			this.costFn = costFn;
-			this.neurons = Array(size).fill(null);
-			this.labels = [];
-			this.learningRate = 0.1;
+			this.labels = labels || [];
+			this.learningRate = learningRate || 0.1;
 		}
 		set inputs (newInputs) {
 			this.activations = newInputs;

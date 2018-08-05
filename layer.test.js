@@ -25,7 +25,7 @@
 // // test("outputLayer.outputSignal outputs total 1", () => {
 // // 	expect(outputLayer.outputSignal.reduce((accum, output) => accum + output)).toBeCloseTo(1,5);
 // // })
-let testLayer =  new Layer({numberOfNeurons: 7, inputLayer: [0,1,2,3,4,5,6], costFn: crossEntropyCostFunction})
+let testLayer =  new Layer(9, {inputLayer: [0,1,2,3,4,5,6], costFn: crossEntropyCostFunction})
 console.log('testLayer', testLayer)
 // test("fake", ()=>expect(true).toBe(true));
 let mAb = [
