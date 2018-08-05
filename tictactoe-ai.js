@@ -17,6 +17,10 @@ const NeuralNetwork = (() => {
 		return rnd;	
 	}
 
+	const negZeroFix = (array) => {
+		return array.map(n => n === -0 ? 0 : n);
+	}
+
 	const reLu = (input, derivative = false, a = .01) => {
 		if (derivative) {
 			return Array.isArray(input) ? input.map((x) => x <= 0 ? a : 1) : input <= 0 ? a : 1;
@@ -29,7 +33,7 @@ const NeuralNetwork = (() => {
 			return softmaxPrime(arrayZ);
 		}
 		if (!Array.isArray(arrayZ)){
-			arrayZ = [arrayZ];
+			arrayZ = [arrayZ];d
 		}
 		let denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK), 0);
 		return arrayZ.map((elementJ) => {
@@ -117,44 +121,89 @@ const NeuralNetwork = (() => {
 	}
 
 	class Layer {
-		constructor (numberOfNeurons, neuronClass, inputLayer, activationFn, lossFn = crossEntropyCostFunction) {
+		constructor (numberOfNeurons, neuronClass, inputLayer, activationFn, costFn = crossEntropyCostFunction) {
+			this.inputLayer = inputLayer;
 			this.activationFn = activationFn;
-			this.lossFn = lossFn;
+			this.costFn = costFn;
 			this.neurons = Array(numberOfNeurons).fill(null).map(() => new neuronClass(inputLayer));
 			this.labels = [];
+			this.learningRate = 0.1;
+		}
+		set inputs (newInputs) {
+			this.inputLayer = newInputs;
 		}
 		get weightedInputs () {
-			return math.dotMultiply(this.activations, this.weights).map(n => n === -0 ? 0 : n);//second map statement is to replace negative zeroes with normal zeroes.
+			console.log('@this.activations, this.weights', this.activations, this.weights);
+			return negZeroFix(math.dotMultiply(this.activations, this.weights));
 		}
 		get outputSignal () {
 			let weightedInputSum = this.weightedInputs.map(neuron => neuron.reduce((sum, value) => sum + value));
 			return this.activationFn(math.add(weightedInputSum, this.biases));
 		}
+		get outputDeriv () {
+			let weightedInputSum = this.weightedInputs.map(neuron => neuron.reduce((sum, value) => sum + value));
+			return this.activationFn(math.add(weightedInputSum, this.biases, true));
+		}
 		get activations () {
 			return this.neurons.map(neuron => neuron.inputs);
 		}
 		get weights () {
-			return this.neurons.map(neuron =>  neuron.weights);
+			return this.neurons.map(neuron => neuron.weights);
+		}
+		get transposedWeights () {
+			return math.transpose(this.weights);
+		}
+		set weights (newWeights) {
+			return this.neurons.map((neuron, i)=> neuron.weights = newWeights[i]);
 		}
 		get biases () {
 			return this.neurons.map(neuron => neuron.bias);
 		}
-		get errors () {
-			return this.lossFn(this.outputSignal, this.actuals);
+		set biases (newBiases) {
+			return this.neurons.map((neuron, i) => neuron.bias = newBiases[i]);
 		}
-		get totalError () {
-			return this.errors.reduce((sum, error) => sum + error);
+		get actuals () {
+			return this.labels;
 		}
 		set actuals (actuals) {
 			this.labels = actuals;
-			this.neurons.map((neuron, i) => neuron.actual = actuals[i]);
 		}
-		get actuals (){
-			return this.labels;
+		get errors () {
+			return negZeroFix(this.costFn(this.outputSignal, this.actuals));
 		}
-		backprop (actuals) {
-			this.actuals = actuals;
-			return this.neurons.map(neuron => neuron.updateWeightsAndBias());
+		get totalError () {
+			console.log("this.errors=", this.errors);
+			return this.errors.reduce((sum, error) => sum + error);
+		}
+		updateWeightsAndBiases ({delta: delta, weights: dependentWeights}) {
+			console.log('dependentWeights', dependentWeights)
+			console.log(`updateWeightsAndBiases (${delta}, ${dependentWeights}) called`)
+			const costDeriv = delta;
+			console.log('costDeriv', costDeriv)
+			const transposedWeights = math.transpose(dependentWeights);
+			console.log('transposedWeights', transposedWeights)
+			console.log('this.outputDeriv', this.outputDeriv)
+			const deltaB = math.dotMultiply(transposedWeights, costDeriv)// * costDeriv;
+			console.log('deltaB', deltaB)
+			console.log('this.activations', this.activations)
+			const transposedActivations = math.transpose(this.activations);
+			console.log('transposedActivations', transposedActivations)
+			const deltaW = math.multiply(transposedActivations, deltaB);
+			console.log('deltaW', deltaW);
+			const newWeights = this.weights.map((neuronWeights, i) => {
+				let updatedWeight = math.subtract(neuronWeights, math.dotMultiply(this.learningRate, deltaW[i]));
+				return updatedWeight;
+			});
+			this.biases = math.subtract(this.biases, math.dotMultiply(this.learningRate, deltaB));
+			// this.biases = this.biases.map((bias, i) => bias - math.dotMultiply(this.learningRate, deltaB));			
+			console.log('this.biases', this.biases);
+			console.log('newWeights', newWeights);
+			this.weights = newWeights;
+			console.log('😎this.weights', this.weights);
+			return {
+				delta: deltaB, 
+				weights: this.weights
+			};
 		}
 	}
 
@@ -186,29 +235,47 @@ const NeuralNetwork = (() => {
 			this.classLabels.map((label, i) => results[label] = outputs[i]);
 			return results;
 		}
+		updateWeightsAndBiases () {
+			console.log(`updateWeightsAndBiases () called`)
+			const costDeriv = negZeroFix(this.costFn(this.outputSignal, this.actuals, true));
+			const deltaB = math.dotMultiply(costDeriv, this.outputDeriv);
+			const transposedActivations = math.transpose(this.activations);
+			const deltaW = math.multiply(transposedActivations, deltaB);
+			const newWeights = this.weights.map((neuronWeights, i) => {
+				let updatedWeight = math.subtract(neuronWeights, math.dotMultiply(this.learningRate, deltaW[i]));
+				return updatedWeight;
+			});
+			this.biases = math.subtract(this.biases, math.dotMultiply(this.learningRate, deltaB));
+			this.weights = newWeights;
+			console.log('😎this.weights', this.weights);
+			return {
+				delta: deltaB, 
+				weights: this.weights
+			};
+		}
 	}
-	// class OutputLayer extends Layer {
-	// 	constructor (numberOfNeurons, inputLayer, classLabels = ["lose", "draw", "win"]) {
-	// 		super(OutputNeuron, numberOfNeurons, inputLayer);
-	// 		this.neurons.map((neuron, i) => {
-	// 			neuron.classLabel = classLabels[i];
-	// 		});
-	// 	}
-	// 	get rawResults () {
-	// 		return this.neurons.map(neuron => neuron.result);
-	// 	}
-	// 	get results () {
-	// 		const raw = this.rawResults.map(result => result[1]);
-	// 		const normalized = softmax(raw);
-	// 		const output = {}
-	// 		this.rawResults.map((result, i) => {
-	// 			output[result[0]] = normalized[i];
-	// 		});
-	// 		return output;
-	// 	}
-	// }
 
+	class Network {
+		constructor (arrayOfLayers){
+			this.layers = arrayOfLayers;
+		}
+		feedForward (testExample) {
+			let newSignal = testExample;
+			this.layers.map(layer => {
+				layer.inputs = newSignal;
+				newSignal = layer.outputSignal;
+			});
+		}
+		backprop (actuals) {
+			this.layers[this.layers.length - 1].actuals = actuals;
+			const reversedLayers = [...this.layers].reverse();
+			reversedLayers.reduce((delta, layer) => {
+				return layer.updateWeightsAndBiases(delta);
+			}, 0);
+		}
+	}
 	return { 
+		math,
 		adjustedRandomGaussian,
 		reLu,
 		softmax,
@@ -220,7 +287,8 @@ const NeuralNetwork = (() => {
 		Layer,
 		InputLayer,
 		HiddenLayer,
-		OutputLayer
+		OutputLayer,
+		Network
 	}
 })();
 
