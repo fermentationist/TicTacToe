@@ -155,17 +155,18 @@ const NeuralNetwork = (() => {
 			return math.transpose(this.weights);
 		}
 		
-		updateWeightsAndBiases ({delta: delta, weights: dependentWeights}) {
-			console.log('dependentWeights', dependentWeights);
+		updateWeightsAndBiases ({delta, dependentWeights}) {
+			const transposedDependentWeights = math.transpose(dependentWeights);
 			console.log(`updateWeightsAndBiases (${delta}, ${dependentWeights}) called`);
 			const costDeriv = delta;
 			console.log('costDeriv', costDeriv);
 			console.log('this.outputDeriv', this.outputDeriv)
-			const deltaB = math.dotMultiply(this.transposedWeights, costDeriv);// * costDeriv;
+			const deltaB = math.multiply(transposedDependentWeights, costDeriv).map(row => row.reduce((s,n) => s + n)) ;// * outputDeriv;
 			console.log('deltaB', deltaB);
 			const transposedActivations = math.transpose(this.inputMatrix);
 			console.log('transposedActivations', transposedActivations);
-			const deltaW = math.dotMultiply(transposedActivations, deltaB);
+			const transposedDeltaB = math.transpose(deltaB);
+			const deltaW = math.multiply(transposedActivations, deltaB);
 			console.log('deltaW', deltaW);
 			const newWeights = this.weights.map((neuronWeights, i) => {
 				let updatedWeight = math.subtract(neuronWeights, math.dotMultiply(this.learningRate, deltaW[i]));
@@ -179,7 +180,7 @@ const NeuralNetwork = (() => {
 			console.log('this.weights', this.weights);
 			return {
 				delta: deltaB, 
-				weights: this.weights
+				dependentWeights: this.weights
 			};
 		}
 	}
@@ -221,7 +222,7 @@ const NeuralNetwork = (() => {
 		}
 		updateWeightsAndBiases () {
 			const costDeriv = this.costFn(this.outputSignal, this.actuals, true);
-			console.log('costDeriv', costDeriv);
+			console.log('costDeriv, outputLayer', costDeriv);
 			console.log('this.outputDeriv', this.outputDeriv);
 			const deltaB = math.multiply(costDeriv, this.outputDeriv);	
 			console.log('💩B', deltaB);
@@ -229,6 +230,8 @@ const NeuralNetwork = (() => {
 				);
 			const deltaW = math.dotMultiply(deltaB, transposedActivations);
 			console.log('💩W', deltaW);
+			const deltaW2 = math.multiply(deltaB, transposedActivations);
+			console.log('💩W2', deltaW2);
 			const newWeights = this.weights.map((neuronWeights, i) => {
 				let updatedWeight = math.subtract(neuronWeights, math.dotMultiply(this.learningRate, deltaW[i]));
 				return updatedWeight;
@@ -239,7 +242,7 @@ const NeuralNetwork = (() => {
 			console.log('😎this.weights', this.weights);
 			return {
 				delta: deltaB, 
-				weights: this.weights
+				dependentWeights: this.weights
 			};
 		}
 	}
