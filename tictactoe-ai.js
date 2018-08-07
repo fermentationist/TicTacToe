@@ -63,7 +63,7 @@ const NeuralNetwork = (() => {
 	}
 
 	const crossEntropyPrime = (predictions, labels) => {
-		return predictions.map((prediction, i) => -1 * labels[i] / prediction);
+		return predictions.map((prediction, i) => -labels[i] / prediction - (1 - labels[i])/(1 - prediction));
 	}
 
 	// ========================================================================
@@ -224,11 +224,12 @@ const NeuralNetwork = (() => {
 			const costDeriv = this.costFn(this.outputSignal, this.actuals, true);
 			console.log('costDeriv, outputLayer', costDeriv);
 			console.log('this.outputDeriv', this.outputDeriv);
-			const deltaB = math.multiply(costDeriv, this.outputDeriv);	
+			const deltaB = math.dotMultiply(costDeriv, this.outputDeriv);	
 			console.log('💩B', deltaB);
-			const transposedActivations = math.transpose(this.activations
-				);
-			const deltaW = math.dotMultiply(deltaB, transposedActivations);
+			console.log('💩B.length', deltaB.length);
+			const transposedActivations = math.transpose([this.activations]);
+			console.log('transposedActivations', transposedActivations);
+			const deltaW = math.multiply(transposedActivations, deltaB);
 			console.log('💩W', deltaW);
 			const deltaW2 = math.multiply(deltaB, transposedActivations);
 			console.log('💩W2', deltaW2);

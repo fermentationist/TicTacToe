@@ -47,7 +47,7 @@ const X ={ delta: 0.647603687809087,
        0.44504698445599167,
        0.4371856367055913,
        -1.219224422634968 ] ] }
-console.log(hiddenLayer1.updateWeightsAndBiases(X));
+console.log(outputLayer2.updateWeightsAndBiases(X));
 // test("fake", ()=>expect(true).toBe(true));
 
 // let db = .3;
