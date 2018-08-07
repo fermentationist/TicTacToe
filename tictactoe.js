@@ -193,6 +193,7 @@ const TicTacToe = (() => {
 	}
 
 	return {
+		clearTerminal,
 		deepCopy,
 		Game,
 		startGame,
