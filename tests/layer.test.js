@@ -3,7 +3,7 @@
  const {game,
 		clearTerminal,
 		math,
-		limitOutput,
+		clipOutput,
 		adjustedRandomGaussian,
 		reLu,
 		softmax,
@@ -44,7 +44,7 @@ const trainingTest = async () =>{
 }
 trainingTest();
 
-// console.log("limitOutput",[0,1,100000,-100000,1e-33, -1e-33, -0, .99999999999999999].map(n => limitOutput(n)));
+// console.log("clipOutput",[0,1,100000,-100000,1e-33, -1e-33, -0, .99999999999999999].map(n => clipOutput(n)));
 // console.log("softmax([1e-33,-0,9], false)", softmax([1e-33,-0,99], true))
 // console.log("softmax([0,1,99], true)", crossEntropyCostFunction([ 1.0112214926104486e-43, 2.7487850079102147e-43, 0 ],[1,0,0]))
 
