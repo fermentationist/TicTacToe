@@ -21,7 +21,7 @@ const NeuralNetwork = (() => {
 
 	const limitOutput = (n, min = 1e-13) => {
 		if (isNaN(n)) {
-			return 0;
+			return limitOutput(randomGaussian());
 		}
 		return Math.abs(1 - n) < min ? 1 - min : nonZero(n);
 	}
@@ -104,7 +104,7 @@ const NeuralNetwork = (() => {
 			this.activationFn = activationFn;
 			this.costFn = costFn || crossEntropyCostFunction;
 			this.labels = labels || [];
-			this.learningRate = learningRate || 0.1;
+			this.learningRate = learningRate || 0.45;
 			this.updateVariables = true;
 			
 		}
@@ -232,12 +232,12 @@ const NeuralNetwork = (() => {
 			const results = this.layers.map(layer => layer.correctedVariables);
 			results.shift();
 			const iterationError = this.layers[this.layers.length - 1].totalError;
-			this.assessLearningRate(iterationError);
+			this.adjustLearningRate(iterationError);
 			console.log(`\n\n^^^Iteration Error: ${iterationError}`);
 			// results.map(layer => console.table(layer[0], layer[1]));
 			return results;
 		}
-		assessLearningRate (error, max = 1, adjustmentRate = .5) {
+		adjustLearningRate (error, max = 1, adjustmentRate = .5) {
 			if (error > max) {
 				this.layers.map(layer => layer.learningRate *= adjustmentRate);
 			}
