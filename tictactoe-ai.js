@@ -19,8 +19,20 @@ const NeuralNetwork = (() => {
 		return rnd;	
 	}
 
-	const negZeroFix = (array) => {
-		return array.map(n => n === -0 ? 0 : n);
+	const limitOutput = (n, min = 1e-13) => {
+		if (isNaN(n)) {
+			return 0;
+		}
+		return Math.abs(1 - n) < min ? 1 - min : nonZero(n);
+	}
+
+	const nonZero = (n, min = 1e-13) => {
+		const absN = Math.abs(n);
+		const sign = Math.sign(n);
+		if (absN === 0){
+			return sign !== 0 ? (min * sign) : min;
+		}
+		return Math.max(absN, min) * sign;
 	}
 
 	const reLu = (input, derivative = false, a = .01) => {
@@ -28,7 +40,7 @@ const NeuralNetwork = (() => {
 			return Array.isArray(input) ? input.map((x) => x <= 0 ? a : 1) : input <= 0 ? a : 1;
 		}
 		return Array.isArray(input) ? input.map((x) => x < 0 ? a * x : x) : input < 0 ? a * input : input;
-		}//"leaky" ReLu function, where a represents "leakiness". Works on arrays or a single number
+	}//"leaky" ReLu function, where a represents "leakiness". Works on arrays or a single number
 
 	const softmax = (arrayZ, derivative = false) => {
 		if (derivative) {
@@ -38,6 +50,7 @@ const NeuralNetwork = (() => {
 			arrayZ = [arrayZ];d
 		}
 		let denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK), 0);
+		// denominator = limitOutput(denominator);
 		return arrayZ.map((elementJ) => {
 			let numerator = Math.exp(elementJ);
 			return numerator/denominator;
@@ -49,7 +62,8 @@ const NeuralNetwork = (() => {
 			return 1;
 		}
 		const sqrtDenominator = (arrayZ.reduce((sum, z) => sum + Math.exp(z), 0));
-		const denominator = sqrtDenominator ** 2;
+		let denominator = sqrtDenominator ** 2;
+		// denominator = limitOutput(denominator);
 		const outputArray = arrayZ.map(z => {
 			let numerator = Math.exp(z) * (sqrtDenominator - Math.exp(z));
 			return numerator/denominator;
@@ -62,11 +76,18 @@ const NeuralNetwork = (() => {
 		if (derivative) {
 			return crossEntropyPrime(predictions, labels);
 		}
-		return predictions.map((prediction, i) => -1 * labels[i] * Math.log(prediction));
+
+		return predictions.map((prediction, i) => {
+			// prediction = limitOutput(prediction);
+			return -1 * labels[i] * Math.log(prediction)
+		});
 	}
 
 	const crossEntropyPrime = (predictions, labels) => {
-		return predictions.map((prediction, i) => -labels[i] / prediction - (1 - labels[i])/(1 - prediction));
+		return predictions.map((prediction, i) => {
+			// prediction = limitOutput(prediction);
+			return -labels[i] / prediction - (1 - labels[i])/(1 - prediction);
+		});
 	}
 
 	// ========================================================================
@@ -83,7 +104,7 @@ const NeuralNetwork = (() => {
 			this.activationFn = activationFn;
 			this.costFn = costFn || crossEntropyCostFunction;
 			this.labels = labels || [];
-			this.learningRate = learningRate || 0.25;
+			this.learningRate = learningRate || 0.1;
 			this.updateVariables = true;
 			
 		}
@@ -98,7 +119,8 @@ const NeuralNetwork = (() => {
 			return this.weightedInputs.map((input, i) => input + this.biases[i]);
 		}
 		get outputSignal () {
-			return this.activationFn(this.weightedAndBiasedInputs);
+			console.log('this.weightedAndBiasedInputs', this.weightedAndBiasedInputs);
+			return this.activationFn(this.weightedAndBiasedInputs).map(n => limitOutput(n));
 		}
 		get outputDeriv () {
 			return this.activationFn(this.weightedAndBiasedInputs, true);
@@ -173,6 +195,8 @@ const NeuralNetwork = (() => {
 			return this.errors.reduce((sum, error) => sum + error);
 		}
 		backpropagateError () {
+			console.table(this.results);
+			console.log('this.outputSignal', this.outputSignal);
 			const costDeriv = this.costFn(this.outputSignal, this.actuals, true);
 			const delta = math.dotMultiply(costDeriv, this.outputDeriv);	
 			const nablaB = delta;
@@ -193,7 +217,6 @@ const NeuralNetwork = (() => {
 		}
 		feedForward (testExample) {
 			let newSignal = testExample.boardState;
-			console.log('newSignal', newSignal)
 			this.layers.map(layer => {
 				layer.activations = newSignal;
 				newSignal = layer.outputSignal;
@@ -208,22 +231,29 @@ const NeuralNetwork = (() => {
 			}, 0);
 			const results = this.layers.map(layer => layer.correctedVariables);
 			results.shift();
-			console.log(`\n\n^^^Iteration Error: ${this.layers[this.layers.length - 1].totalError}`);
+			const iterationError = this.layers[this.layers.length - 1].totalError;
+			this.assessLearningRate(iterationError);
+			console.log(`\n\n^^^Iteration Error: ${iterationError}`);
 			// results.map(layer => console.table(layer[0], layer[1]));
 			return results;
 		}
+		assessLearningRate (error, max = 1, adjustmentRate = .5) {
+			if (error > max) {
+				this.layers.map(layer => layer.learningRate *= adjustmentRate);
+			}
+		}
 		async runTestIteration (testExample){
-			const actuals = await this.feedForward(testExample.boardState);
+			const actuals = await this.feedForward(testExample);
 			return await this.backpropagate(actuals);
 		}
 		async train (epochs, trainingData, updateVariables = true){
 			console.log('epochs', epochs)
-			const result = [];
+			let result;
 			if (updateVariables) {
 				this.layers.map(layer => layer.updateVariables = true)
 			}
 			for(let i = 0; i < epochs; i ++){
-				console.log('i', i)
+				console.log(`\n\nEpoch: ${i}`);
 				result = await trainingData.map(testExample => this.runTestIteration(testExample));
 				this.output.push(result);
 			}
@@ -233,6 +263,7 @@ const NeuralNetwork = (() => {
 	return { 
 		game,
 		clearTerminal,
+		limitOutput,
 		math,
 		adjustedRandomGaussian,
 		reLu,

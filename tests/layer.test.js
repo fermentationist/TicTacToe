@@ -1,9 +1,11 @@
  const cTable = require("console.table");
  const NeuralNetwork = require("../tictactoe-ai.js");
  const {game,
- 		clearTerminal,
- 		math,
- 		reLu,
+		clearTerminal,
+		math,
+		limitOutput,
+		adjustedRandomGaussian,
+		reLu,
 		softmax,
 		crossEntropyCostFunction,
 		Layer,
@@ -11,9 +13,9 @@
 		HiddenLayer,
 		OutputLayer,
 		Network} = NeuralNetwork;
-
-// clearTerminal();
-const inputLayer0 = new InputLayer(9, {inputVector: [0,1,0,0,1,-1,0,-1,0]});
+console.log("\n\n\n\n\n\n\n");
+clearTerminal();
+const inputLayer0 = new InputLayer(9, {inputVector: [1,2,0,1,2,1,1,0,1]});
 const hiddenLayer1 = new HiddenLayer(8, {inputVector: inputLayer0.outputSignal});
 
 const outputLayer2 = new OutputLayer(3, {inputVector: hiddenLayer1.outputSignal});
@@ -26,11 +28,26 @@ const testExample = [{
 	actuals: [0,1,0]
 }];
 
+const testExample2 = [{
+	boardState: [1,2,0,1,2,1,1,0,1],
+	actuals: [1,0,0]
+}];
 // let output =  async () => console.log(await net.train(10, testExample));
 // output()
 console.log('net.layers[2].weights before', net.layers[2].weights)
-net.feedForward(testExample[0]);
-console.log('net.layers[2].weights after', net.layers[2].weights)
+// net.train(10,testExample);
+
+const trainingTest = async () =>{
+	let out = await net.train(50,testExample2);
+	// console.log('net.layers[2].weights after', net.layers[2].weights)
+	return out;
+}
+trainingTest();
+
+// console.log("limitOutput",[0,1,100000,-100000,1e-33, -1e-33, -0, .99999999999999999].map(n => limitOutput(n)));
+// console.log("softmax([1e-33,-0,9], false)", softmax([1e-33,-0,99], true))
+// console.log("softmax([0,1,99], true)", crossEntropyCostFunction([ 1.0112214926104486e-43, 2.7487850079102147e-43, 0 ],[1,0,0]))
+
 // console.log('inputLayer0.outputSignal', inputLayer0.outputSignal);
 // console.log('hiddenLayer1.outputSignal', hiddenLayer1.outputSignal);
 // console.log('outputLayer2.outputSignal', outputLayer2.outputSignal);
