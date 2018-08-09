@@ -34,7 +34,7 @@ const testExample2 = [{
 }];
 // let output =  async () => console.log(await net.train(10, testExample));
 // output()
-console.log('net.layers[2].weights before', net.layers[2].weights)
+// console.log('net.layers[2].weights before', net.layers[2].weights)
 // net.train(10,testExample);
 
 const trainingTest = async () =>{
@@ -42,57 +42,44 @@ const trainingTest = async () =>{
 	// console.log('net.layers[2].weights after', net.layers[2].weights)
 	return out;
 }
-trainingTest();
 
-// console.log("clipOutput",[0,1,100000,-100000,1e-33, -1e-33, -0, .99999999999999999].map(n => clipOutput(n)));
-// console.log("softmax([1e-33,-0,9], false)", softmax([1e-33,-0,99], true))
-// console.log("softmax([0,1,99], true)", crossEntropyCostFunction([ 1.0112214926104486e-43, 2.7487850079102147e-43, 0 ],[1,0,0]))
+// trainingTest();
 
-// console.log('inputLayer0.outputSignal', inputLayer0.outputSignal);
-// console.log('hiddenLayer1.outputSignal', hiddenLayer1.outputSignal);
-// console.log('outputLayer2.outputSignal', outputLayer2.outputSignal);
-// console.log('outputLayer2.results', outputLayer2.results);
-// console.log('outputLayer2.totalError', outputLayer2.totalError);
+const randomNumber = (min, max) => Math.random() * (max - min) + min;
+const randomInteger = (min, max) => Math.floor(randomNumber(min, max));
 
+const randomishNumber = () => {
+	const dieRoll = Math.floor(Math.random() * 100);
+	const sign = Math.floor(dieRoll) % 2 === 0 ? -1 : 1;
+	if (dieRoll <= 3) {
+		return sign * 0;
+	}
+	if (dieRoll <= 6) {
+		return sign * 1;
+	}
+	return randomNumber(1e-33,200) * sign;
+}
 
-// const X ={ delta: [ -1.1348366583601339e-8,
-//   -1.1686920017609997e-8,
-//   -3.385534152523912e-10 ],
-//   dependentWeights: 
-//    [ [ 0.11887659819337962,
-//        0.4256765069931383,
-//        -0.9192736098997577,
-//        -0.633770215817162,
-//        -1.1262269279570318,
-//        -0.30686796034405767,
-//        -0.5802454760120094,
-//        -1.2319562165312692 ],
-//      [ -0.6457423850614877,
-//        -1.1397344566097773,
-//        -0.3504426965830213,
-//        -0.34428335855039216,
-//        -0.7057056753250293,
-//        -1.1341703612161627,
-//        0.05394560992176861,
-//        -0.29348418339869253 ],
-//      [ 0.16201326949430828,
-//        -0.4104387265839933,
-//        0.25511783793996745,
-//        -0.3598379305891699,
-//        -1.1341384487769721,
-//        0.44504698445599167,
-//        0.4371856367055913,
-//        -1.219224422634968 ] ] }
-// console.log(outputLayer2.backpropagateError());
-// console.log(hiddenLayer1.backpropagateError(X));
+const randomizedSoftmaxInput = (minArrayLength = 0, maxArrayLength = 20) => {
+	let randomArrayLength = randomInteger(minArrayLength, maxArrayLength);
+	let outputArray = Array(randomArrayLength).fill(null).map(() => randomishNumber());
+	return outputArray;
+}
 
-// console.log('softmax([1, 2, 3], true)', softmax([1, 2, 3], true));
-// const e = n => Math.exp(n);
-// const e1 = e(1);
-// const e2 = e(2);
-// const e3 = e(3);
-// const resulta = e1 * (e2 + e3)/(e1 + e2 + e3) ** 2
-// console.log('resulta', resulta)
+let sergio = randomizedSoftmaxInput();
+console.log('sergio', sergio);
 
+// const softmaxTestInput = [0, 1, 2, 4]
+// test("01. softmax", () => {
+// 	expect(math.round(softmax(softmaxTestInput), 6)).toEqual([0.015219,
+// 0.041371, 0.112457, 0.830953], 6);
+// test("02. softmax", () => {
+// 	for (let i; i < 1000; i ++){
+// 		Math.random() * (Math.random() * 10
+// 	}
+// 	expect(softmax(randomizedSoftmaxInput)).not.toContain
+// 	})
+//   // correct results based on https://keisan.casio.com/exec/system/15168444286206
+// });
 // test("fake", ()=>expect(true).toBe(true));
 

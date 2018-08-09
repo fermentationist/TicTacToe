@@ -47,7 +47,7 @@ const NeuralNetwork = (() => {
 			return softmaxPrime(arrayZ);
 		}
 		if (!Array.isArray(arrayZ)){
-			arrayZ = [arrayZ];d
+			arrayZ = [arrayZ];
 		}
 		let denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK), 0);
 		// denominator = clipOutput(denominator);
