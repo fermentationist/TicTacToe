@@ -19,11 +19,11 @@ const NeuralNetwork = (() => {
 		return rnd;	
 	}
 
-	const clipOutput = (n, min = 1e-13) => {
+	const clipOutput = (n, max = 711, min = 1e-13) => {
 		if (isNaN(n)) {
 			return clipOutput(randomGaussian());
 		}
-		return Math.abs(1 - n) < min ? 1 - min : nonZero(n);
+		return nonZero(Math.min(n, max), min);
 	}
 
 	const nonZero = (n, min = 1e-13) => {
@@ -42,30 +42,60 @@ const NeuralNetwork = (() => {
 		return Array.isArray(input) ? input.map((x) => x < 0 ? a * x : x) : input < 0 ? a * input : input;
 	}//"leaky" ReLu function, where a represents "leakiness". Works on arrays or a single number
 
+	// const softmax = (arrayZ, derivative = false) => {
+	// 	if (derivative) {
+	// 		return softmaxPrime(arrayZ);
+	// 	}
+	// 	if (!Array.isArray(arrayZ)){
+	// 		arrayZ = [arrayZ];
+	// 	}
+	// 	let denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK), 0);
+	// 	// denominator = clipOutput(denominator);
+	// 	return arrayZ.map((elementJ) => {
+	// 		let numerator = Math.exp(elementJ);
+	// 		return numerator/denominator;
+	// 	});
+	// }
+
 	const softmax = (arrayZ, derivative = false) => {
+		// Math.exp outputs NaN if given a number greater than approx. 709.7827
+		// Thanks to https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/ for this trick to avoid overflow!!
+		const normalizer = Math.max(arrayZ) || arrayZ[0];// Use largest (or first) value to normalize exponentiation calculations
 		if (derivative) {
-			return softmaxPrime(arrayZ);
+			return softmaxPrime(arrayZ, normalizer);
 		}
 		if (!Array.isArray(arrayZ)){
 			arrayZ = [arrayZ];
 		}
-		let denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK), 0);
-		// denominator = clipOutput(denominator);
+		const denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK - normalizer), 0);
 		return arrayZ.map((elementJ) => {
-			let numerator = Math.exp(elementJ);
+			let numerator = Math.exp(elementJ - normalizer);
 			return numerator/denominator;
 		});
 	}
 
-	const softmaxPrime = (arrayZ) => {
+	// const softmaxPrime = (arrayZ) => {
+	// 	if (!Array.isArray(arrayZ)){
+	// 		return 1;
+	// 	}
+	// 	const sqrtDenominator = (arrayZ.reduce((sum, z) => sum + Math.exp(z), 0));
+	// 	let denominator = sqrtDenominator ** 2;
+	// 	// denominator = clipOutput(denominator);
+	// 	const outputArray = arrayZ.map(z => {
+	// 		let numerator = Math.exp(z) * (sqrtDenominator - Math.exp(z));
+	// 		return numerator/denominator;
+	// 	});
+	// 	return outputArray;
+	// }
+
+	const softmaxPrime = (arrayZ, normalizer) => {
 		if (!Array.isArray(arrayZ)){
 			return 1;
 		}
-		const sqrtDenominator = (arrayZ.reduce((sum, z) => sum + Math.exp(z), 0));
+		const sqrtDenominator = (arrayZ.reduce((sum, z) => sum + Math.exp(z - normalizer), 0));
 		let denominator = sqrtDenominator ** 2;
-		// denominator = clipOutput(denominator);
 		const outputArray = arrayZ.map(z => {
-			let numerator = Math.exp(z) * (sqrtDenominator - Math.exp(z));
+			let numerator = Math.exp(z - normalizer) * (sqrtDenominator - Math.exp(z - normalizer));
 			return numerator/denominator;
 		});
 		return outputArray;
@@ -279,6 +309,7 @@ const NeuralNetwork = (() => {
 		adjustedRandomGaussian,
 		reLu,
 		softmax,
+		// softmax2,
 		crossEntropyCostFunction,
 		Layer,
 		InputLayer,

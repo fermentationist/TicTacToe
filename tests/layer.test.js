@@ -7,6 +7,7 @@
 		adjustedRandomGaussian,
 		reLu,
 		softmax,
+		// softmax2,
 		crossEntropyCostFunction,
 		Layer,
 		InputLayer,
@@ -60,26 +61,44 @@ const randomishNumber = () => {
 	return randomNumber(1e-33,200) * sign;
 }
 
-const randomizedSoftmaxInput = (minArrayLength = 0, maxArrayLength = 20) => {
+const randomizedSoftmaxInput = (minArrayLength = 1, maxArrayLength = 4) => {
 	let randomArrayLength = randomInteger(minArrayLength, maxArrayLength);
 	let outputArray = Array(randomArrayLength).fill(null).map(() => randomishNumber());
 	return outputArray;
 }
-
-let sergio = randomizedSoftmaxInput();
-console.log('sergio', sergio);
-
-// const softmaxTestInput = [0, 1, 2, 4]
-// test("01. softmax", () => {
-// 	expect(math.round(softmax(softmaxTestInput), 6)).toEqual([0.015219,
-// 0.041371, 0.112457, 0.830953], 6);
-// test("02. softmax", () => {
-// 	for (let i; i < 1000; i ++){
-// 		Math.random() * (Math.random() * 10
-// 	}
-// 	expect(softmax(randomizedSoftmaxInput)).not.toContain
-// 	})
-//   // correct results based on https://keisan.casio.com/exec/system/15168444286206
-// });
+const softmaxTest1Input = [0, 1, 2, 4];
+test("01. softmax, for known result", () => {
+	expect(math.round(softmax(softmaxTest1Input), 6)).toEqual([0.015219,
+	0.041371, 0.112457, 0.830953], 6);// correct results based on https://keisan.casio.com/exec/system/15168444286206
+});
+test("02. softmax, random inputs", () => {
+	for (let i = 0; i < 1000; i ++){
+		let randomizedInput = randomizedSoftmaxInput();
+		// console.log('randomizedInput', randomizedInput);
+		let testArray = softmax(randomizedInput);
+		let testArrayPrime = softmax(randomizedInput, true);
+		// console.log('testArray', testArray);
+		// let softmaxFixTest = softmax2(randomizedInput);
+		// let softmaxFixTestPrime = softmax2(randomizedInput, true);
+		// expect(testArray.length).toEqual(softmaxFixTest.length);
+		// expect(testArrayPrime.length).toEqual(softmaxFixTestPrime.length);
+		testArray.map((n , i) => {
+			expect(isNaN(n)).toBe(false);
+			expect(Math.sign(n)).not.toBe(-1);
+			// expect(n).toBeCloseTo(softmaxFixTest[i]);
+		});
+		testArrayPrime.map((n , i) => {
+			expect(isNaN(n)).toBe(false);
+			expect(Math.sign(n)).not.toBe(-1);
+			// expect(n).toBeCloseTo(softmaxFixTestPrime[i]);
+		})
+		let elementTotal = testArray.reduce((sum, n) => sum + n)
+		// console.log('elementTotal', elementTotal);
+		expect(elementTotal).toBeCloseTo(1, 5);
+		randomizedInput.length === 1 ? expect(testArray[0]).toEqual(1) : null;
+	}
+});
+  
 // test("fake", ()=>expect(true).toBe(true));
+
 
