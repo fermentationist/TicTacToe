@@ -19,12 +19,12 @@ const NeuralNetwork = (() => {
 		return rnd;	
 	}
 
-	const clipOutput = (n, max = 711, min = 1e-13) => {
-		if (isNaN(n)) {
-			return clipOutput(randomGaussian());
-		}
-		return nonZero(Math.min(n, max), min);
-	}
+	// const clipOutput = (n, max = 711, min = 1e-13) => {
+	// 	if (isNaN(n)) {
+	// 		return clipOutput(randomGaussian());
+	// 	}
+	// 	return nonZero(Math.min(n, max), min);
+	// }
 
 	const nonZero = (n, min = 1e-13) => {
 		const absN = Math.abs(n);
@@ -42,51 +42,60 @@ const NeuralNetwork = (() => {
 		return Array.isArray(input) ? input.map((x) => x < 0 ? a * x : x) : input < 0 ? a * input : input;
 	}//"leaky" ReLu function, where a represents "leakiness". Works on arrays or a single number
 
-	// const softmax = (arrayZ, derivative = false) => {
-	// 	if (derivative) {
-	// 		return softmaxPrime(arrayZ);
-	// 	}
-	// 	if (!Array.isArray(arrayZ)){
-	// 		arrayZ = [arrayZ];
-	// 	}
-	// 	let denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK), 0);
-	// 	// denominator = clipOutput(denominator);
-	// 	return arrayZ.map((elementJ) => {
-	// 		let numerator = Math.exp(elementJ);
-	// 		return numerator/denominator;
-	// 	});
-	// }
-
 	const softmax = (arrayZ, derivative = false) => {
 		// Math.exp outputs NaN if given a number greater than approx. 709.7827
 		// Thanks to https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/ for this trick to avoid overflow!!
-		const normalizer = Math.max(arrayZ) || arrayZ[0];// Use largest (or first) value to normalize exponentiation calculations
+		let normalizer;
+		if (!Math.max(arrayZ)) {
+			normalizer = arrayZ[0];
+		} else {
+			// Use the input with the largest absolute value to normalize exponentiation calculations
+			const absMax = Math.max(arrayZ.map(x => Math.abs(x)));
+			let sign;
+			arrayZ.some(n => {
+				sign = Math.sign(n);
+				return Math.abs(n) === absMax;
+			});
+			normalizer = absMax * sign;
+		}
 		if (derivative) {
 			return softmaxPrime(arrayZ, normalizer);
 		}
 		if (!Array.isArray(arrayZ)){
 			arrayZ = [arrayZ];
 		}
-		const denominator = arrayZ.reduce((sum, elementK) => sum + Math.exp(elementK - normalizer), 0);
-		return arrayZ.map((elementJ) => {
-			let numerator = Math.exp(elementJ - normalizer);
+		const denominator = arrayZ.reduce((sum, elementB) => sum + Math.exp(elementB - normalizer), 0);
+		return arrayZ.map((elementA) => {
+			let numerator = Math.exp(elementA - normalizer);
 			return numerator/denominator;
 		});
 	}
 
-	// const softmaxPrime = (arrayZ) => {
-	// 	if (!Array.isArray(arrayZ)){
-	// 		return 1;
-	// 	}
-	// 	const sqrtDenominator = (arrayZ.reduce((sum, z) => sum + Math.exp(z), 0));
-	// 	let denominator = sqrtDenominator ** 2;
-	// 	// denominator = clipOutput(denominator);
-	// 	const outputArray = arrayZ.map(z => {
-	// 		let numerator = Math.exp(z) * (sqrtDenominator - Math.exp(z));
-	// 		return numerator/denominator;
-	// 	});
-	// 	return outputArray;
-	// }
+	const softmax2 = (arrayZ, derivative = false) => {
+		// Math.exp outputs NaN if given a number greater than approx. 709.7827
+		// This fix is based on a trick I found at https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/ I adapted it to work for input arrays containing both largely positive and largely negative numbers
+		if (derivative) {
+			return softmaxPrime2(arrayZ);
+		}
+		return arrayZ.map((elementA) => {
+			let denominator = arrayZ.reduce((sum, elementB) => sum + Math.exp(elementB - elementA), 0);
+			let numerator = Math.exp(elementA - elementA);
+			return numerator/denominator;
+		});
+	}
+
+	const softmaxPrime2 = (arrayZ) => {
+		if (!Array.isArray(arrayZ)){
+			return 1;
+		}
+		const outputArray = arrayZ.map(elementA => {
+			let sqrtDenominator = (arrayZ.reduce((sum, elementB) => sum + Math.exp(elementB - elementA), 0));
+			let denominator = sqrtDenominator ** 2;
+			let numerator = Math.exp(elementA - elementA) * (sqrtDenominator - Math.exp(elementA - elementA));
+			return numerator/denominator;
+		});
+		return outputArray;
+	} 
 
 	const softmaxPrime = (arrayZ, normalizer) => {
 		if (!Array.isArray(arrayZ)){
@@ -151,7 +160,7 @@ const NeuralNetwork = (() => {
 			return this.weightedInputs.map((input, i) => input + this.biases[i]);
 		}
 		get outputSignal () {
-			return this.activationFn(this.weightedAndBiasedInputs).map(n => clipOutput(n));
+			return this.activationFn(this.weightedAndBiasedInputs);
 		}
 		get outputDeriv () {
 			return this.activationFn(this.weightedAndBiasedInputs, true);
@@ -270,7 +279,7 @@ const NeuralNetwork = (() => {
 			// results.map(layer => console.table(layer[0], layer[1]));
 			return results;
 		}
-		adjustLearningRate (error, max = 1, adjustmentRate = .5) {
+		adjustLearningRate (error, max = 1, adjustmentRate = 1) {
 			if (error > max) {
 				this.layers.map(layer => layer.learningRate *= adjustmentRate);
 			}
@@ -304,12 +313,12 @@ const NeuralNetwork = (() => {
 	return { 
 		game,
 		clearTerminal,
-		clipOutput,
+		// clipOutput,
 		math,
 		adjustedRandomGaussian,
 		reLu,
 		softmax,
-		// softmax2,
+		softmax2,
 		crossEntropyCostFunction,
 		Layer,
 		InputLayer,
