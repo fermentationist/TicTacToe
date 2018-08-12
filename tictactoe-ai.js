@@ -40,75 +40,43 @@ const NeuralNetwork = (() => {
 			return Array.isArray(input) ? input.map((x) => x <= 0 ? a : 1) : input <= 0 ? a : 1;
 		}
 		return Array.isArray(input) ? input.map((x) => x < 0 ? a * x : x) : input < 0 ? a * input : input;
-	}//"leaky" ReLu function, where a represents "leakiness". Works on arrays or a single number
+	}//"leaky" ReLu function, where 'a' represents "leakiness". Works on arrays or a single number
 
 	const softmax = (arrayZ, derivative = false) => {
 		// Math.exp outputs NaN if given a number greater than approx. 709.7827
-		// Thanks to https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/ for this trick to avoid overflow!!
-		let normalizer;
-		if (!Math.max(arrayZ)) {
-			normalizer = arrayZ[0];
-		} else {
-			// Use the input with the largest absolute value to normalize exponentiation calculations
-			const absMax = Math.max(arrayZ.map(x => Math.abs(x)));
-			let sign;
-			arrayZ.some(n => {
-				sign = Math.sign(n);
-				return Math.abs(n) === absMax;
-			});
-			normalizer = absMax * sign;
-		}
-		if (derivative) {
-			return softmaxPrime(arrayZ, normalizer);
-		}
-		if (!Array.isArray(arrayZ)){
-			arrayZ = [arrayZ];
-		}
-		const denominator = arrayZ.reduce((sum, elementB) => sum + Math.exp(elementB - normalizer), 0);
-		return arrayZ.map((elementA) => {
-			let numerator = Math.exp(elementA - normalizer);
-			return numerator/denominator;
-		});
-	}
-
-	const softmax2 = (arrayZ, derivative = false) => {
-		// Math.exp outputs NaN if given a number greater than approx. 709.7827
 		// This fix is based on a trick I found at https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/ I adapted it to work for input arrays containing both largely positive and largely negative numbers
-		if (derivative) {
-			return softmaxPrime2(arrayZ);
+		if ((!Array.isArray(arrayZ) || arrayZ.length === 1) && !derivative){
+			return [1];
 		}
-		return arrayZ.map((elementA) => {
+		const outputArray = arrayZ.map((elementA) => {
 			let denominator = arrayZ.reduce((sum, elementB) => sum + Math.exp(elementB - elementA), 0);
 			let numerator = Math.exp(elementA - elementA);
 			return numerator/denominator;
 		});
-	}
-
-	const softmaxPrime2 = (arrayZ) => {
-		if (!Array.isArray(arrayZ)){
-			return 1;
+		if (derivative) {
+			return softmaxPrime(outputArray);
 		}
-		const outputArray = arrayZ.map(elementA => {
-			let sqrtDenominator = (arrayZ.reduce((sum, elementB) => sum + Math.exp(elementB - elementA), 0));
-			let denominator = sqrtDenominator ** 2;
-			let numerator = Math.exp(elementA - elementA) * (sqrtDenominator - Math.exp(elementA - elementA));
-			return numerator/denominator;
+		return outputArray
+	}
+	const jacobianMatrix = (vector) => {
+		const len = vector.length;
+		return vector.map((n, i) => {
+			const row = Array(len).fill(0);
+			row[i] = n;
+			return row;
 		});
-		return outputArray;
+	}
+	const softmaxPrime = (softmaxOutput) => {
+		const s = softmaxOutput;
+		const jacobian = jacobianMatrix(s);
+		jacobian.map((row, i) => {
+			row.map((col, j) => {
+				jacobian[i][j] = i === j ? s[i] * (1 - s[i]) : -s[i] * s[j];
+				// jacobian[i][j] = i === j ? col * (1 - col) : -row[i] * col;
+			});	
+		});
+		return jacobian;
 	} 
-
-	const softmaxPrime = (arrayZ, normalizer) => {
-		if (!Array.isArray(arrayZ)){
-			return 1;
-		}
-		const sqrtDenominator = (arrayZ.reduce((sum, z) => sum + Math.exp(z - normalizer), 0));
-		let denominator = sqrtDenominator ** 2;
-		const outputArray = arrayZ.map(z => {
-			let numerator = Math.exp(z - normalizer) * (sqrtDenominator - Math.exp(z - normalizer));
-			return numerator/denominator;
-		});
-		return outputArray;
-	}
 
 	const crossEntropyCostFunction = (prediction, labels, derivative = false) => {
 		let predictions = Array.isArray(prediction) ? prediction : [prediction];
@@ -143,7 +111,7 @@ const NeuralNetwork = (() => {
 			this.activationFn = activationFn;
 			this.costFn = costFn || crossEntropyCostFunction;
 			this.labels = labels || [];
-			this.learningRate = learningRate || 0.9;
+			this.learningRate = learningRate || 0.5;
 			this.updateVariables = true;
 			this.momentumAdjustment = this.weights.map(n => 0);
 			this.updates = [];
@@ -239,7 +207,11 @@ const NeuralNetwork = (() => {
 		backpropagateError () {
 			console.table(this.results);
 			const costDeriv = this.costFn(this.outputSignal, this.actuals, true);
-			const delta = math.dotMultiply(costDeriv, this.outputDeriv);	
+			// console.log('costDeriv', costDeriv);
+			// console.table('this.outputDeriv', this.outputDeriv);
+			const delta = math.multiply(costDeriv, this.outputDeriv);	
+			
+			// console.log('delta', delta);
 			const nablaB = delta;
 			const transposedActivations = math.transpose(this.inputMatrix);
 			const nablaW = math.multiply(transposedActivations, nablaB);
@@ -284,12 +256,12 @@ const NeuralNetwork = (() => {
 				this.layers.map(layer => layer.learningRate *= adjustmentRate);
 			}
 		}
-		updateMomentumAdjustment (layer, momentumConstant = .75) {
+		updateMomentumAdjustment (layer, momentumConstant = .90) {
 			if (!layer.gradients.length) {
 				return;
 			}
 			let momentumAdjustment = math.dotMultiply(momentumConstant, layer.gradients[layer.gradients.length - 1]);
-			console.log('momentumAdjustment', momentumAdjustment);
+			// console.log('momentumAdjustment', momentumAdjustment);
 			layer.momentumAdjustment = momentumAdjustment;
 		}
 		async runTestIteration (testExample){
@@ -314,11 +286,12 @@ const NeuralNetwork = (() => {
 		game,
 		clearTerminal,
 		// clipOutput,
+		jacobianMatrix,
 		math,
 		adjustedRandomGaussian,
 		reLu,
 		softmax,
-		softmax2,
+		// softmax2,
 		crossEntropyCostFunction,
 		Layer,
 		InputLayer,
