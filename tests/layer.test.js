@@ -25,7 +25,7 @@ const net = new Network([inputLayer0, hiddenLayer1, outputLayer2]);
 
 // net.backpropagate([0,1,0]);
 
-const testExample = [{
+const testExample1 = [{
 	boardState: [0,1,0,0,1,-1,0,-1,0],
 	actuals: [0,1,0]
 }];
@@ -40,7 +40,7 @@ const testExample2 = [{
 // net.train(10,testExample);
 
 const trainingTest = async () =>{
-	let out = await net.train(10000,testExample2);
+	let out = await net.train(10000,testExample1);
 	// console.log('net.layers[2].weights after', net.layers[2].weights)
 	return out;
 }

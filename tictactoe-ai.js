@@ -229,6 +229,7 @@ const NeuralNetwork = (() => {
 			this.output = [];
 		}
 		feedForward (testExample) {
+			// clearTerminal();
 			let newSignal = testExample.boardState;
 			this.layers.map(layer => {
 				layer.activations = newSignal;
