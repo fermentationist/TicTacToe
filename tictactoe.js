@@ -16,7 +16,7 @@ const TicTacToe = (() => {
 	}
 
 	const clearTerminal = () => {
-		return process.stdout.write("\033c");//clear terminal
+		// return process.stdout.write("\033c");//clear terminal
 	}
 
 	const displayGrid = (game) => {
