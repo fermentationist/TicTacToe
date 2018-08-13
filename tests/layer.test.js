@@ -23,29 +23,13 @@ const hiddenLayer1 = new HiddenLayer(8, {inputVector: inputLayer0.outputSignal})
 const outputLayer2 = new OutputLayer(3, {inputVector: hiddenLayer1.outputSignal});
 const net = new Network([inputLayer0, hiddenLayer1, outputLayer2]);
 
-// net.backpropagate([0,1,0]);
-
-const testExample1 = [{
-	boardState: [0,1,0,0,1,-1,0,-1,0],
-	actuals: [0,1,0]
-}];
-
-const testExample2 = [{
-	boardState: [1,2,0,1,2,1,1,0,1],
-	actuals: [1,0,0]
-}];
-// let output =  async () => console.log(await net.train(10, testExample));
-// output()
-// console.log('net.layers[2].weights before', net.layers[2].weights)
-// net.train(10,testExample);
-
-const trainingTest = async () =>{
-	let out = await net.train(10000,testExample1);
+const trainingTest = async (numberOfIterations) =>{
+	let out = await net.train(numberOfIterations,testExample1);
 	// console.log('net.layers[2].weights after', net.layers[2].weights)
 	return out;
 }
 
-trainingTest();
+trainingTest(10000);
 
 const randomNumber = (min, max) => Math.random() * (max - min) + min;
 const randomInteger = (min, max) => Math.floor(randomNumber(min, max));
