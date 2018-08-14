@@ -1,5 +1,5 @@
 const jsonTrainingData = require ("./tictactoe-simulations.json");
-const fs = require("fs");
+// const fs = require("fs");
 let numberOfBoards = jsonTrainingData.length;
 let outputArray = Array(numberOfBoards).fill(null);
 

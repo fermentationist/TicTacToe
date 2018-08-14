@@ -1,6 +1,6 @@
 //Hyperparameters
-const LEARNING_RATE = 0.25;
-const MOMENTUM_CONSTANT = 0.8;
+const LEARNING_RATE = 0.1;
+const MOMENTUM_CONSTANT = 0.75;
 
 const NeuralNetwork = (() => {
 	const game = require("./tictactoe.js");
@@ -8,6 +8,8 @@ const NeuralNetwork = (() => {
 	const randomGaussian = require("random").normal(mu = 0, sigma = 1);
 	const math = require("mathjs");
 	const cTable = require("console.table");
+	const fs = require("fs");
+	let correctGuesses = 0;
 
 	const adjustedRandomGaussian = (inputLayerSize, activationFn) => {
 		const rnd = randomGaussian();
@@ -162,7 +164,9 @@ const NeuralNetwork = (() => {
 			this.updates.push([newWeights, newBiases]);
 			if (this.updateVariables) {
 				this.weights = newWeights;
+				console.log('this.weights', this.weights);
 				this.biases = newBiases;
+				console.log('this.biases', this.biases);
 			}
 		}	
 	}
@@ -208,11 +212,21 @@ const NeuralNetwork = (() => {
 			return this.errors.reduce((sum, error) => sum + error);
 		}
 		backpropagateError () {
+			const outcomeKey = {
+				"001": "win",
+				"010": "draw",
+				"100": "lose"
+			};
 			console.table(this.results);
 			const outputValues = Object.values(this.results);
 			let guessValue = Math.max(...outputValues);
 			let guess = this.classLabels[outputValues.indexOf(guessValue)];
+			let correctLabel = outcomeKey[this.actuals.join("")];
 			console.log('guess', guess);
+			console.log(`correct label: ${correctLabel}`);
+			if (guess === correctLabel){
+				correctGuesses ++;
+			}
 			const costDeriv = this.costFn(this.outputSignal, this.actuals, true);
 			// console.log('costDeriv', costDeriv);
 			// console.table('this.outputDeriv', this.outputDeriv);
@@ -245,11 +259,6 @@ const NeuralNetwork = (() => {
 			return testExample.actuals;
 		}
 		backpropagate (actuals) {
-			const outcomeKey = {
-				"001": "win",
-				"010": "draw",
-				"100": "lose"
-			};
 			this.layers[this.layers.length - 1].actuals = actuals;
 			const reversedLayers = [...this.layers].reverse();
 			reversedLayers.reduce((delta, layer) => {
@@ -260,7 +269,7 @@ const NeuralNetwork = (() => {
 			results.shift();
 			const iterationError = this.layers[this.layers.length - 1].totalError;
 			// console.log(`guess: ${}`)
-			console.log(`correct label: ${outcomeKey[actuals.join("")]}`)
+			
 			console.log(`\n\n^^^Iteration Error: ${iterationError}`);
 			// results.map(layer => console.table(layer[0], layer[1]));
 			return results;
@@ -292,7 +301,17 @@ const NeuralNetwork = (() => {
 				result = await trainingData.map(testExample => this.runTestIteration(testExample));
 				this.output.push(result);
 			}
+			// console.log('this.layers', this.layers);
+			let successRate = correctGuesses / (trainingData.length * epochs);
+			console.log(`Success Rate = ${(successRate * 100).toFixed(4)}%`);
 			return this.output;
+		}
+		saveState (filename) {
+			console.log('this.layers', this.layers);
+			fs.writeFile(filename, JSON.stringify(this.layers), "utf8", (err) => {
+				console.log('this.layers', this.layers);
+				console.error(err);
+			});
 		}
 	}
 	return { 
