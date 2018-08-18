@@ -8,7 +8,8 @@ const NeuralNetwork = (() => {
 	const randomGaussian = require("random").normal(mu = 0, sigma = 1);
 	const math = require("mathjs");
 	const cTable = require("console.table");
-	const fs = require("fs");
+	const {promisify} = require("util");
+	const {readFile, writeFile} = require("fs");
 	let correctGuesses = 0;
 
 	const adjustedRandomGaussian = (inputLayerSize, activationFn) => {
@@ -103,6 +104,30 @@ const NeuralNetwork = (() => {
 
 	// ========================================================================
 
+	// const loadState = async (filename) => {
+	// 		let parsedData = new Promise((resolve, reject) => {
+	// 			fs.readFile(filename, "utf8", (err, data) => {
+	// 				err ? reject(err) : resolve(data);
+	// 			});
+	// 		});
+	// 		// console.log('parsedData', parsedData)
+	// 		// const parsedData = JSON.parse(jsonData);
+	// 		// const rehydratedNetwork = new Network(parsedData.layers);
+	// 		// return rehydratedNetwork;
+	// 		return await parsedData;
+	// }
+	// const readFile = promisify(fs.readFile);
+	const loadState = async (filename) => {
+		const read = promisify(readFile);
+		const loadedFile = await read(filename, "utf8");
+		// const rehydratedNetwork = new Network(loadedFile.layers);
+		const parsedFile = await JSON.parse(loadedFile);
+		const rehydratedNetwork = new Network(parsedFile.layers);
+		return rehydratedNetwork;
+	}
+
+
+
 	class Layer {
 		constructor (layerSize, {inputVector, activationFn, costFn, defaultBias, labels, learningRate = LEARNING_RATE, momentum} = {}) {
 			this.layerSize = layerSize;
@@ -142,6 +167,7 @@ const NeuralNetwork = (() => {
 		}
 		
 		backpropagateError ({delta, dependentWeights}) {
+			console.log("backpropagateError() called from hiddenLayer");
 			const transposedDependentWeights = math.transpose(dependentWeights);
 			const nablaB = math.dotMultiply(math.multiply(delta, dependentWeights), this.outputDeriv);
 			const transposedActivations = math.transpose(this.inputMatrix);
@@ -164,9 +190,9 @@ const NeuralNetwork = (() => {
 			this.updates.push([newWeights, newBiases]);
 			if (this.updateVariables) {
 				this.weights = newWeights;
-				console.log('this.weights', this.weights);
+				// console.log('this.weights', this.weights);
 				this.biases = newBiases;
-				console.log('this.biases', this.biases);
+				// console.log('this.biases', this.biases);
 			}
 		}	
 	}
@@ -182,6 +208,7 @@ const NeuralNetwork = (() => {
 			return this.activations;
 		}
 		backpropagateError({delta, dependentWeights}) {
+			console.log("calling backpropagateError() from inputLayer");
 			let totalDelta = delta.reduce((sum, n) => sum + n, 0);
 			return;// console.log(`backpropagation finished.`);
 		}
@@ -212,6 +239,7 @@ const NeuralNetwork = (() => {
 			return this.errors.reduce((sum, error) => sum + error);
 		}
 		backpropagateError () {
+			console.log("calling backpropagateError() from outputLayer");
 			const outcomeKey = {
 				"001": "win",
 				"010": "draw",
@@ -246,12 +274,16 @@ const NeuralNetwork = (() => {
 
 	class Network {
 		constructor (arrayOfLayers){
-			this.layers = arrayOfLayers;
+			if (arrayOfLayers){
+				this.layers = arrayOfLayers;
+			}
 			this.output = [];
 		}
 		feedForward (testExample) {
 			// clearTerminal();
+			console.log(`feedForward(${testExample})`);
 			let newSignal = testExample.boardState;
+			console.log(`layers: ${this.layers.map(layer=>layer.layerSize)}`)
 			this.layers.map(layer => {
 				layer.activations = newSignal;
 				newSignal = layer.outputSignal;
@@ -261,8 +293,10 @@ const NeuralNetwork = (() => {
 		backpropagate (actuals) {
 			this.layers[this.layers.length - 1].actuals = actuals;
 			const reversedLayers = [...this.layers].reverse();
+			// console.log('reversedLayers', reversedLayers)
 			reversedLayers.reduce((delta, layer) => {
 				this.updateMomentumAdjustment(layer);
+				console.log('layer.layerSize', layer.layerSize);
 				return layer.backpropagateError(delta);
 			}, 0);
 			const results = this.layers.map(layer => layer.updates);
@@ -291,7 +325,7 @@ const NeuralNetwork = (() => {
 			const actuals = await this.feedForward(testExample);
 			return await this.backpropagate(actuals);
 		}
-		async train (epochs, trainingData, updateVariables = true){
+		async train (trainingData, epochs, updateVariables = true){
 			let result;
 			if (updateVariables) {
 				this.layers.map(layer => layer.updateVariables = true)
@@ -307,16 +341,21 @@ const NeuralNetwork = (() => {
 			return this.output;
 		}
 		saveState (filename) {
-			console.log('this.layers', this.layers);
-			fs.writeFile(filename, JSON.stringify(this.layers), "utf8", (err) => {
-				console.log('this.layers', this.layers);
+			// console.log('this.layers', this.layers);
+			writeFile(filename, JSON.stringify(this), "utf8", (err) => {
+				// console.log('this.layers', this.layers);
 				console.error(err);
 			});
+		}
+		test () {
+			console.log("TEST COMPLETE")
 		}
 	}
 	return { 
 		game,
 		clearTerminal,
+		loadState,
+		// rehydrate,
 		// clipOutput,
 		jacobianMatrix,
 		math,

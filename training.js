@@ -5,7 +5,8 @@
 		clearTerminal,
 		cTable,
 		math,
-		clipOutput,
+		loadState,
+		// rehydrate,
 		adjustedRandomGaussian,
 		reLu,
 		jacobianMatrix,
@@ -24,17 +25,21 @@ const hiddenLayer2 = new HiddenLayer(7, {inputVector: hiddenLayer1.outputSignal}
 const outputLayer2 = new OutputLayer(3, {inputVector: hiddenLayer2.outputSignal});
 const net = new Network([inputLayer0, hiddenLayer1, hiddenLayer2, outputLayer2]);
 
-const trainingTest = async (data, epochs) =>{
-	let out = await net.train(epochs,data);
-	return out;
-}
+
 
 const sample = trainingData.slice(100,200);
-trainingTest(trainingData, 1);
-// net.saveState("test-save.json");
-const data = JSON.stringify(net.layers);
-fs.writeFile("saveState.json", outputLayer2.biases, "utf8", (err) => {
-				console.log('data', data);
-				console.error(err);
-			});
-// console.log('trainingData', trainingData);
+// trainingTest(sample, 1).then(()=>net.saveState("testfile.json"));
+// let net = new Network();
+// let loadedNet;
+// loadState("testfile.json").then(rehydratedNetwork => {
+// 	console.log('rehydratedNetwork', rehydratedNetwork);
+// 	rehydratedNetwork.train(sample, 1);
+// });
+
+
+const trainingTest = async (data, epochs) =>{
+	let out = await net.train(data, epochs);
+	return out;
+}
+// loadedNet.train(sample,1)
+trainingTest(sample, 1)
