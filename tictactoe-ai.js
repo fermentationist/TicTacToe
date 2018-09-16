@@ -2,6 +2,11 @@
 const LEARNING_RATE = 0.1;
 const MOMENTUM_CONSTANT = 0.75;
 
+const handled = (promise) => {
+	return promise.then(data => data)
+	.catch(err => console.log("∞∞ ", err) && err)
+}
+
 const NeuralNetwork = (() => {
 	const game = require("./tictactoe.js");
 	const {clearTerminal} = game;
@@ -119,9 +124,9 @@ const NeuralNetwork = (() => {
 	// const readFile = promisify(fs.readFile);
 	const loadState = async (filename) => {
 		const read = promisify(readFile);
-		const loadedFile = await read(filename, "utf8");
+		const loadedFile = await handled(read(filename, "utf8"));
 		// const rehydratedNetwork = new Network(loadedFile.layers);
-		const parsedFile = await JSON.parse(loadedFile);
+		const parsedFile = await handled(JSON.parse(loadedFile));
 		const rehydratedNetwork = new Network(parsedFile.layers);
 		return rehydratedNetwork;
 	}
@@ -147,14 +152,23 @@ const NeuralNetwork = (() => {
 			this.gradients = [];
 		}
 		get inputMatrix () {
+			console.log("∑∑ this.activations", this.activations);
 			let matrix = Array(this.layerSize).fill(this.activations);
+			console.log('∑∑ matrix', matrix)
 			return matrix;
 		}
 		get weightedInputs () {
+			console.log('this', this);
+			console.log('this.transposedWeights', this.transposedWeights)
+			console.log('this.activations', this.activations)
 			return math.multiply(this.activations, this.transposedWeights);
 		}
 		get  weightedAndBiasedInputs () {
-			return this.weightedInputs.map((input, i) => input + this.biases[i]);
+			return this.weightedInputs.map((input, i) => {
+				let biased = parseFloat(input) + parseFloat(this.biases[i]);
+				console.log('biased', biased);
+				return biased;
+			});
 		}
 		get outputSignal () {
 			return this.activationFn(this.weightedAndBiasedInputs);
@@ -202,7 +216,7 @@ const NeuralNetwork = (() => {
 			super(layerSize, {inputVector: inputVector, activationFn: null});
 			this.weights = null;
 			this.biases = null;
-			this.type = "input";
+			this.layerType = "input";
 		}
 		get outputSignal () {
 			return this.activations;
@@ -217,7 +231,7 @@ const NeuralNetwork = (() => {
 	class HiddenLayer extends Layer {
 		constructor (layerSize, {inputVector} = {}) {
 			super(layerSize, {inputVector: inputVector, activationFn: reLu});
-			this.type = "hidden";
+			this.layerType = "hidden";
 		}
 	}
 
@@ -225,6 +239,7 @@ const NeuralNetwork = (() => {
 		constructor (layerSize, {inputVector, classLabels = ["lose", "draw", "win"]} = {}) {
 			super(layerSize, {inputVector: inputVector, activationFn: softmax});
 			this.classLabels = classLabels;
+			this.layerType = "output"
 		}
 		get results () {
 			const results = {};
@@ -283,10 +298,9 @@ const NeuralNetwork = (() => {
 			// clearTerminal();
 			console.log(`feedForward(${testExample})`);
 			let newSignal = testExample.boardState;
-			console.log(`layers: ${this.layers.map(layer=>layer.layerSize)}`)
-			this.layers.map(layer => {
+			this.layers.map(async layer => {
 				layer.activations = newSignal;
-				newSignal = layer.outputSignal;
+				newSignal = await handled(layer.outputSignal);
 			});
 			return testExample.actuals;
 		}
@@ -322,8 +336,8 @@ const NeuralNetwork = (() => {
 			layer.momentumAdjustment = momentumAdjustment;
 		}
 		async runTestIteration (testExample){
-			const actuals = await this.feedForward(testExample);
-			return await this.backpropagate(actuals);
+			const actuals = await handled(this.feedForward(testExample));
+			return await handled(this.backpropagate(actuals));
 		}
 		async train (trainingData, epochs, updateVariables = true){
 			let result;
@@ -332,7 +346,7 @@ const NeuralNetwork = (() => {
 			}
 			for(let i = 1; i <= epochs; i ++){
 				console.log(`\n\nEpoch: ${i}`);
-				result = await trainingData.map(testExample => this.runTestIteration(testExample));
+				result = await handled(trainingData.map(testExample => this.runTestIteration(testExample)))
 				this.output.push(result);
 			}
 			// console.log('this.layers', this.layers);
