@@ -1,6 +1,14 @@
 const handled = (promise) => {
-	return promise.then(data => data)
-	.catch(err => console.log("∞∞ ", err) && err)
+	try {
+		return promise.then(data => data)
+		.catch(err => console.log("handled.js intercepted error:", err) && err);
+	}
+	catch (err) {
+		console.log("error in \"handled\": ", err);
+	}
+	// finally {
+	// 	return promise;
+	// }
 }
 
 const handled2 = (promise) => {
@@ -8,14 +16,24 @@ const handled2 = (promise) => {
 		return promise.then(data => data);
 	}
 	catch (err){
-		return console.log("∞∞", err) && err;
+		return console.log("∞∞", err.stack) && err;
 	}
 }
 
 const testF = async (input) => {
 	// const delayedOutput = await handled2((setTimeout(()=> Promise.reject(new Error("fuck!!")), 1000)))
-	const delayedOutput = await handled2(setTimeout(()=> new Promise((resolve, reject) => reject("d'oh!"))))
+	const delayedOutput = await new Promise((resolve, reject) => {
+		setTimeout(() => reject(input), 500)
+		// reject("d'oh!"))
+	})
 	return delayedOutput;
 }
 
-{testF("what?");}
+
+const nonF = {answer: 42}
+
+// const handledF = () => handled(testF("handledF!!"))
+handled(testF("what?"));
+// handled(nonF);
+// handledF();
+
