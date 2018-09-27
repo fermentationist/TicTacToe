@@ -1,39 +1,33 @@
+
 const handled = (promise) => {
 	try {
 		return promise.then(data => data)
-		.catch(err => console.log("handled.js intercepted error:", err) && err);
+		.catch(err => {
+			console.log("\x1b[31m", "handled.js intercepted error:", err, "\nin ", promise);
+			return console.log("\x1b[0m") && err;
+		})
 	}
 	catch (err) {
-		console.log("error in \"handled\": ", err);
-	}
-	// finally {
-	// 	return promise;
-	// }
-}
-
-const handled2 = (promise) => {
-	try {
-		return promise.then(data => data);
-	}
-	catch (err){
-		return console.log("∞∞", err.stack) && err;
+		console.log("\x1b[31m", "error in \"handled\": ", err);
+		return console.log("\x1b[0m") && err;
 	}
 }
 
-const testF = async (input) => {
-	// const delayedOutput = await handled2((setTimeout(()=> Promise.reject(new Error("fuck!!")), 1000)))
-	const delayedOutput = await new Promise((resolve, reject) => {
-		setTimeout(() => reject(input), 500)
-		// reject("d'oh!"))
-	})
-	return delayedOutput;
+const assignPropShortcut = (shortcut) => {
+	Object.defineProperty(Object.prototype, shortcut, {
+		get: function (){
+			return handled(this);
+		}
+	});
 }
 
 
-const nonF = {answer: 42}
+// Object.defineProperty( Object.prototype, "handled", {
+// 	get: function (){
+// 		return handled(this);
+// 	}
+// });
 
-// const handledF = () => handled(testF("handledF!!"))
-handled(testF("what?"));
-// handled(nonF);
-// handledF();
+module.exports = {handled, assignPropShortcut}
+
 
