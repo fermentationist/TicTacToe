@@ -1,11 +1,23 @@
 const jsonTrainingData = require ("./tictactoe-simulations.json");
-// const fs = require("fs");
+const fs = require("fs");
 let numberOfBoards = jsonTrainingData.length;
-let outputArray = Array(numberOfBoards).fill(null);
 
 const randomArrayIndex = (arrayLength) => {
 	return Math.floor(Math.random() * (arrayLength + 1));
 }
+
+const randomizeArray = array => {
+	const inputArray = [...array];
+	const outputArray = [];
+	const arrayLength = inputArray.length;
+	for(let i = 0; i < arrayLength; i++) {
+		const randomIndex = randomArrayIndex(arrayLength);
+		const randomItem = inputArray.splice(randomIndex, 1);
+		outputArray.push(...randomItem);
+	}
+	return outputArray;
+}
+
 const outcomeKey = {
 	"X": [0, 0, 1],
 	"draw": [0, 1, 0],
@@ -16,19 +28,24 @@ const squareValues = {
 	"": 1,
 	"X": 2
 }
-jsonTrainingData.map(game => {
-	let actuals = outcomeKey[game.outcome];
-	
-	game.moves.map(move => {
-		let boardState = move.map(square => {
+
+const outputArray = jsonTrainingData.reduce((boardArray, game) => {
+	const actuals = outcomeKey[game.outcome];
+	game.moves.forEach(move => {
+		const boardState = move.map(square => {
 			return squareValues[square];
 		});
-		let board = {boardState, actuals};
-		let randomSlot = randomArrayIndex(outputArray.length);
-		outputArray[randomSlot] = board;
+		boardArray.push({boardState, actuals});
 	});
+	return boardArray;
+}, []);
+
+const randomized = randomizeArray(outputArray);
+
+module.exports = randomized;
+
+fs.writeFile("prepped-ttt-data.json", JSON.stringify(randomized), "utf8", (err) => {
+	console.error(err);
+	console.log("done.")
 });
 
-module.exports = outputArray;
-
-// fs.writeFile("prepped-ttt-data.json", JSON.stringify(outputArray), "utf8", (err) => console.error(err));

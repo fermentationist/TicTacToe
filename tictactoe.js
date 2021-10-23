@@ -16,7 +16,7 @@ const TicTacToe = (() => {
 	}
 
 	const clearTerminal = () => {
-		// return process.stdout.write("\033c");//clear terminal
+		return process.stdout.write("\033c");//clear terminal
 	}
 
 	const displayGrid = (game) => {
@@ -35,7 +35,6 @@ const TicTacToe = (() => {
 	}
 
 	const deepCopy = (obj) => {
-		// return {... obj};// now we can maybe do this instead? 
 		return JSON.parse(JSON.stringify(obj))
 	}
 
@@ -45,7 +44,6 @@ const TicTacToe = (() => {
 
 	const startGame = () => {
 		const game = newGame();
-		console.log('game.history', game.history);
 		clearTerminal();
 		const inquiry = [{
 			type: "list",
@@ -205,8 +203,10 @@ const TicTacToe = (() => {
 
 module.exports = TicTacToe
 // TicTacToe.startGame();
-
-TicTacToe.runRandomSimulations(10000);
+if (require.main === module) {
+	TicTacToe.runRandomSimulations(100000);
+	// TicTacToe.startGame();
+}
 
 // const sims = require("./tictactoe-simulations.json");
 // console.log("sims[0] = ", sims[1000]);
