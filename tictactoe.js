@@ -22,7 +22,7 @@ const TicTacToe = (() => {
 	const displayGrid = (game) => {
 		const _ = game.grid;
 		const underlined = "\x1b[4m";
-		const white = "\x1b[37m"
+		const white = "\x1b[37m";
 		const resetStyle = "\x1b[0m";
 		let firstRow =  `${_[0]||1}|${_[1]||2}|${_[2]||3}`;
 		let secondRow = `${_[3]||4}|${_[4]||5}|${_[5]||6}`;
@@ -35,7 +35,7 @@ const TicTacToe = (() => {
 	}
 
 	const deepCopy = (obj) => {
-		return 	JSON.parse(JSON.stringify(obj))
+		return JSON.parse(JSON.stringify(obj))
 	}
 
 	const newGame = () => {
@@ -44,7 +44,6 @@ const TicTacToe = (() => {
 
 	const startGame = () => {
 		const game = newGame();
-		console.log('game.history', game.history);
 		clearTerminal();
 		const inquiry = [{
 			type: "list",
@@ -203,7 +202,11 @@ const TicTacToe = (() => {
 })();
 
 module.exports = TicTacToe
-// TicTacToe.runRandomSimulations(10000);
+// TicTacToe.startGame();
+if (require.main === module) {
+	TicTacToe.runRandomSimulations(100000);
+	// TicTacToe.startGame();
+}
 
 // const sims = require("./tictactoe-simulations.json");
 // console.log("sims[0] = ", sims[1000]);
